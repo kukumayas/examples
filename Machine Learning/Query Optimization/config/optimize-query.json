@@ -1,0 +1,50 @@
+{
+  "default": {
+    "match|url|boost": 0,
+    "match|title|boost": 0,
+    "match|body|boost": 0,
+    "multi_match|cross_fields|operator": "AND",
+    "multi_match|cross_fields|boost": 0,
+    "multi_match|phrase|operator": "AND",
+    "multi_match|phrase|slop": 0,
+    "multi_match|phrase|boost": 0
+  },
+  "spaces": [
+    {
+      "name": "query:multi_match|cross_fields",
+      "default": {
+        "multi_match|cross_fields|boost": 1
+      },
+      "space": {
+        "multi_match|cross_fields|operator": ["AND", "OR"]
+      }
+    },
+    {
+      "name": "query:multi_match|phrase",
+      "default": {
+        "multi_match|phrase|boost": 1
+      },
+      "space": {
+        "multi_match|phrase|operator": ["AND", "OR"],
+        "multi_match|phrase|slop": [1, 2, 4]
+      }
+    },
+    {
+      "name": "query_boosts",
+      "default": {},
+      "space": {
+        "match|url|boost": [0, 1, 5, 10],
+        "match|title|boost": [0, 1, 5, 10],
+        "match|body|boost": [0, 1, 5, 10],
+        "multi_match|cross_fields|boost": {
+          "low": 0,
+          "high": 10
+        },
+        "multi_match|phrase|boost": {
+          "low": 0,
+          "high": 10
+        }
+      }
+    }
+  ]
+}

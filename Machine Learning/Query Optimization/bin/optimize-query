@@ -1,0 +1,126 @@
+#!venv/bin/python
+
+"""
+Optimize parameters of a search template using the rank evaluation API for
+measurements. This is a black-box optimization problem where we treat
+Elasticsearch and a relevance metric as a non-convex function to optimize the
+parameter space over. We use either basic grid or random search techniques to
+explore the parameter space, or for larger parameter spaces we use more advanced
+techniques such as Bayesian optimization.
+
+This approach is dependent on Elasticsearch and specifically the rank evaluation
+API, and we use {{scikit-learn}} and {{scikit-optimize}} for finding the optimal
+parameters.
+"""
+
+import argparse
+import json
+import sys
+import os
+
+from elasticsearch import Elasticsearch
+from skopt import gp_minimize
+from skopt.callbacks import DeltaXStopper
+from skopt.utils import use_named_args
+
+# project library
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from qopt.eval import build_requests
+from qopt.optimize import Config, merge_param_train
+from qopt.trec import load_qrels, load_queries_as_tuple
+from qopt.util import Timer, load_json
+
+DEFAULT_METRIC = os.path.join('config', 'metric-mrr.json')
+DEFAULT_PARAMS = os.path.join('config', 'params-defaults.json')
+DEFAULT_TEMPLATE_ID = 'template'
+DEFAULT_URL = 'http://elastic:changeme@localhost:9200'
+
+
+def search_and_evaluate(es, index, metric, templates, template_id, queries, qrels, param_train):
+    """Run the rank evaluation API which will search all requests and evaluate based on the provided resources."""
+
+    # build the rank eval API request body from components
+    params = merge_param_train(param_train)
+    requests = build_requests(index, template_id, queries, qrels, params)
+    body = {
+        'metric': metric,
+        'templates': templates,
+        'requests': requests,
+    }
+
+    results = es.rank_eval(index=index, body=body, request_timeout=1200,
+                           allow_no_indices=False, ignore_unavailable=False)
+    return results['metric_score']
+
+
+def main():
+    parser = argparse.ArgumentParser(prog='optimize-query')
+    parser.add_argument('--url', default=DEFAULT_URL,
+                        help="An Elasticsearch connection URL, e.g. http://user:secret@localhost:9200")
+    parser.add_argument('--index', required=True, help="The index name to use")
+    parser.add_argument('--metric', default=DEFAULT_METRIC,
+                        help=f"A JSON file containing the rank eval metric definition. Default: {DEFAULT_METRIC}.")
+    parser.add_argument('--templates', required=True, help="A JSON file containing search templates to use")
+    parser.add_argument('--template-id', default=DEFAULT_TEMPLATE_ID,
+                        help=f"The template ID of the template to use for all requests. Default: {DEFAULT_TEMPLATE_ID}.")
+    parser.add_argument('--queries', required=True,
+                        help="The TREC Topic file with the queries that correspond to the 'qrels' file")
+    parser.add_argument('--qrels', required=True, help="The TREC QRELs file corresponding to the 'queries' file")
+    parser.add_argument('--config', required=True,
+                        help="A file containing the configuration for the parameters to optimize.")
+    args = parser.parse_args()
+
+    es = Elasticsearch(args.url)
+
+    metric = load_json(args.metric)
+    templates = load_json(args.templates)
+    queries = list(load_queries_as_tuple(args.queries))
+    qrels = load_qrels(args.qrels)
+    config = Config.parse(load_json(args.config))
+
+    print("Using configuration")
+    print(f" - metric: {json.dumps(metric, indent=2)}")
+    print()
+
+    param_train = [config.default]
+    for config_space in config.spaces:
+        base_params = merge_param_train(param_train + [config_space.default])
+
+        print(f"Running optimization for space: {config_space.name}")
+        print(f" - base params: {base_params}")
+
+        @use_named_args(dimensions=config_space.space)
+        def objective_fn(**kwargs):
+            return -1 * search_and_evaluate(
+                es, args.index, metric, templates, args.template_id, queries, qrels,
+                param_train=[base_params, kwargs])
+
+        def params_with_values(param_values):
+            return {k: v for k, v in zip(config_space.dimension_names(), param_values)}
+
+        def logger(result):
+            x0 = result.x_iters  # list of input points
+            y0 = result.func_vals  # evaluation of input points
+            param_values = x0[-1]
+            params = params_with_values(param_values)
+            score = -1*y0[-1]
+
+            print(f" - evaluated: {params}")
+            print(f"   - score: {score:.04f}")
+
+        with Timer() as t:
+            res = gp_minimize(objective_fn, config_space.space,
+                              n_calls=30, n_random_starts=5, verbose=False,
+                              callback=[DeltaXStopper(1e-8), logger])
+
+        best_params = params_with_values(res.x)
+        param_train.append(best_params)
+
+        print(f" - best params: {best_params}")
+        print(f" - best score: {(-1*res.fun):.04f}")
+        print(f" - duration: {t.interval_str()}")
+        print()
+
+
+if __name__ == "__main__":
+    main()

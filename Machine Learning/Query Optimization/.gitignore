@@ -1,0 +1,4 @@
+*.pyc
+/data/
+/venv/
+/notebooks/.ipynb_checkpoints/
