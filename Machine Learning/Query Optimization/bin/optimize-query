@@ -19,9 +19,9 @@ import sys
 import os
 
 from elasticsearch import Elasticsearch
+from sklearn.model_selection import ParameterGrid
 from skopt import gp_minimize
 from skopt.callbacks import DeltaXStopper
-from skopt.utils import use_named_args
 
 # project library
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -85,41 +85,73 @@ def main():
     param_train = [config.default]
     for config_space in config.spaces:
         base_params = merge_param_train(param_train + [config_space.default])
+        selected_method = config_space.select_method()
 
         print(f"Running optimization for space: {config_space.name}")
+        print(f" - selected method: {selected_method}")
+        if selected_method != 'grid':
+            print(f" - num iterations: {config_space.num_iterations}")
         print(f" - base params: {base_params}")
-
-        @use_named_args(dimensions=config_space.space)
-        def objective_fn(**kwargs):
-            return -1 * search_and_evaluate(
-                es, args.index, metric, templates, args.template_id, queries, qrels,
-                param_train=[base_params, kwargs])
 
         def params_with_values(param_values):
             return {k: v for k, v in zip(config_space.dimension_names(), param_values)}
 
+        def objective_fn(param_values):
+            params = params_with_values(param_values)
+            return -1 * search_and_evaluate(
+                es, args.index, metric, templates, args.template_id, queries, qrels,
+                param_train=[base_params, params])
+
         def logger(result):
             x0 = result.x_iters  # list of input points
             y0 = result.func_vals  # evaluation of input points
-            param_values = x0[-1]
-            params = params_with_values(param_values)
+
+            num_iters = len(x0)
+            params = params_with_values(x0[-1])
             score = -1*y0[-1]
 
-            print(f" - evaluated: {params}")
-            print(f"   - score: {score:.04f}")
+            print(f"   - iteration {num_iters} evaluated: {params}")
+            print(f"     - score: {score:.04f}")
 
+        best_params = {}
+        best_score = 0.0
         with Timer() as t:
-            res = gp_minimize(objective_fn, config_space.space,
-                              n_calls=30, n_random_starts=5, verbose=False,
-                              callback=[DeltaXStopper(1e-8), logger])
+            if selected_method == 'grid':
+                grid_space = params_with_values([list(dim.categories) for dim in config_space.space])
+                for i, params in enumerate(list(ParameterGrid(grid_space))):
+                    score = search_and_evaluate(
+                        es, args.index, metric, templates, args.template_id, queries, qrels,
+                        param_train=[base_params, params])
+                    print(f"   - iteration {i+1} evaluated: {params}")
+                    print(f"     - score: {score:.04f}")
+                    if score > best_score:
+                        best_score = score
+                        best_params = params.copy()
 
-        best_params = params_with_values(res.x)
+            elif selected_method == 'bayesian':
+                res = gp_minimize(func=objective_fn, dimensions=config_space.space,
+                                  n_calls=30,  # total calls to func, includes initial points
+                                  n_initial_points=5,
+                                  initial_point_generator='random',
+                                  acq_func='PI',  # automatic at each iteration
+                                  acq_optimizer='auto',  # selects the optimizer based on dimension types
+                                  xi=0.01,  # improvement expected for acquisition method "EI" or "PI"
+                                  kappa=4.0,  # exploration/exploitation for acquisition method "LCB", higher means more exploration
+                                  verbose=False,
+                                  callback=[DeltaXStopper(1e-8), logger])
+                best_params = params_with_values(res.x)
+                best_score = -1*res.fun
+            else:
+                raise ValueError(f"Unsupported method: {selected_method}")
+
         param_train.append(best_params)
-
         print(f" - best params: {best_params}")
-        print(f" - best score: {(-1*res.fun):.04f}")
+        print(f" - best score: {best_score:.04f}")
         print(f" - duration: {t.interval_str()}")
         print()
+
+    print("Final params:")
+    print(json.dumps(merge_param_train(param_train), indent=2))
 
 
 if __name__ == "__main__":

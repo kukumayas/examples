@@ -1,57 +1,5 @@
 [
   {
-    "id": "simple",
-    "template": {
-      "lang": "mustache",
-      "source": {
-        "query": {
-          "bool": {
-            "should": [
-              {
-                "match": {
-                  "title": {
-                    "query": "{{query_string}}",
-                    "boost": "{{match|title|boost}}",
-                    "_name": "match|title"
-                  }
-                }
-              },
-              {
-                "multi_match": {
-                  "query": "{{query_string}}",
-                  "fields": [
-                    "url",
-                    "title",
-                    "body"
-                  ],
-                  "type": "cross_fields",
-                  "operator": "{{multi_match|cross_fields|operator}}",
-                  "boost": "{{multi_match|cross_fields|boost}}",
-                  "_name": "multi_match|cross_fields"
-                }
-              },
-              {
-                "multi_match": {
-                  "query": "{{query_string}}",
-                  "fields": [
-                    "url",
-                    "title",
-                    "body"
-                  ],
-                  "type": "phrase",
-                  "operator": "{{multi_match|phrase|operator}}",
-                  "slop": "{{multi_match|phrase|slop}}",
-                  "boost": "{{multi_match|phrase|boost}}",
-                  "_name": "multi_match|phrase"
-                }
-              }
-            ]
-          }
-        }
-      }
-    }
-  },
-  {
     "id": "template",
     "template": {
       "lang": "mustache",

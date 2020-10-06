@@ -26,16 +26,21 @@
       },
       "space": {
         "multi_match|phrase|operator": ["AND", "OR"],
-        "multi_match|phrase|slop": [1, 2, 4]
+        "multi_match|phrase|slop": [1, 2, 4, 6]
       }
     },
     {
       "name": "query_boosts",
-      "default": {},
+      "num_iterations": 50,
       "space": {
-        "match|url|boost": [0, 1, 5, 10],
-        "match|title|boost": [0, 1, 5, 10],
-        "match|body|boost": [0, 1, 5, 10],
+        "match|title|boost": {
+          "low": 0,
+          "high": 10
+        },
+        "match|body|boost": {
+          "low": 0,
+          "high": 10
+        },
         "multi_match|cross_fields|boost": {
           "low": 0,
           "high": 10

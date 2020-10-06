@@ -3,20 +3,51 @@ from skopt.space import Categorical, Integer, Real
 
 
 class ConfigSpace:
+    DEFAULT_METHOD = 'auto'
+    DEFAULT_NUM_ITERATIONS = 30
+
     __DEFAULT_BASE = 10
     __DEFAULT_DISTRIBUTION = 'uniform'
+    __METHODS = {'auto', 'grid', 'bayesian', None}
     __RANGE_FIELDS = {'low', 'high', 'distribution', 'base'}
 
-    def __init__(self, name, default, space):
+    def __init__(self, name, default, method, num_iterations, space):
+        assert name, "Name is required"
+        assert method in ConfigSpace.__METHODS, f"Unsupported method: {method}, must be one of {ConfigSpace.__METHODS}"
+        assert space, "Space is required"
+        assert not (method == 'grid' and num_iterations), f"Number of iterations is not supported for grid search"
+
         self.name = name
-        self.default = default
+        self.default = default or {}
+        self.method = method or ConfigSpace.DEFAULT_METHOD
+        self.num_iterations = num_iterations or ConfigSpace.DEFAULT_NUM_ITERATIONS
         self.space = space
 
     def dimension_names(self):
         return [dim.name for dim in self.space]
 
-    def dimensionality(self):
-        reduce(lambda x, y: x*y, self.space)
+    def select_method(self):
+        """Select method if it's auto, otherwise use the provided method."""
+
+        def all_dimensions_are_categorical():
+            return all([isinstance(dim, Categorical) for dim in self.space])
+
+        def dimensionality():
+            sizes = [len(dim.categories) for dim in self.space]
+            return reduce(lambda x, y: x*y, sizes)
+
+        if self.method != 'auto':
+            # if a specific method was already chosen, use it
+            return self.method
+        elif not all_dimensions_are_categorical():
+            # we can only do a grid search if all the dimensions are categorical
+            return 'bayesian'
+        elif dimensionality() <= self.num_iterations:
+            # do a grid search only when the dimensionality is <= num iterations
+            return 'grid'
+        else:
+            # default to bayesian as it's the most flexible option
+            return 'bayesian'
 
     @staticmethod
     def __parse_space(space):
@@ -68,10 +99,14 @@ class ConfigSpace:
     @staticmethod
     def parse(config):
         """Parse a space config from JSON into a concrete {{ConfigSpace}}."""
-        assert isinstance(config['default'], dict), "Default params should be a dict of simple key-value pairs"
+        assert 'name' in config, "Name is required in a space configuration"
+        assert 'space' in config, "Space is required in a space configuration"
+
         return ConfigSpace(
             name=config['name'],
-            default=config['default'].copy(),
+            default=config.get('default'),
+            method=config.get('method'),
+            num_iterations=config.get('num_iterations'),
             space=ConfigSpace.__parse_space(config['space']))
 
 

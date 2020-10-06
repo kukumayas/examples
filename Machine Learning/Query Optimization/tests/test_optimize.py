@@ -71,6 +71,32 @@ class TestConfigSpace(unittest.TestCase):
         self.assertEqual(config.space[4], Integer(low=1, high=10, prior='log-uniform', base=2, name='int_range_log2'))
         self.assertEqual(config.space[5], Real(low=1.0, high=10.0, prior='log-uniform', base=2, name='float_range_log2'))
 
+    def test_select_method__provided(self):
+        cs = ConfigSpace('name', {}, 'grid', None, [Categorical(['one', 'two'])])
+        self.assertEqual(cs.select_method(), 'grid')
+
+    def test_select_method__auto_mixed_dims(self):
+        cs = ConfigSpace('name', {}, 'auto', 10, [Categorical(['one', 'two']), Integer(0, 1)])
+        self.assertEqual(cs.select_method(), 'bayesian')
+
+    def test_select_method__auto_low_dimensionality(self):
+        # dimensionality = 2 < 10
+        cs = ConfigSpace('name', {}, 'auto', 10, [Categorical(['one', 'two'])])
+        self.assertEqual(cs.select_method(), 'grid')
+
+        # dimensionality = 4 < 10
+        cs = ConfigSpace('name', {}, 'auto', 10, [Categorical(['one', 'two']), Categorical(['three', 'four'])])
+        self.assertEqual(cs.select_method(), 'grid')
+
+        # dimensionality = 6 == 6
+        cs = ConfigSpace('name', {}, 'auto', 6, [Categorical(['one', 'two']), Categorical(['three', 'four', 'five'])])
+        self.assertEqual(cs.select_method(), 'grid')
+
+    def test_select_method__auto_high_dimensionality(self):
+        # dimensionality = 6 > 5
+        cs = ConfigSpace('name', {}, 'auto', 5, [Categorical(['one', 'two']), Categorical(['three', 'four', 'five'])])
+        self.assertEqual(cs.select_method(), 'bayesian')
+
 
 class TestConfig(unittest.TestCase):
 
@@ -84,12 +110,16 @@ class TestConfig(unittest.TestCase):
                 {
                     'name': 'name1',
                     'default': {},
-                    'space': {},
+                    'space': {
+                        'key1': ['value1', 'value2'],
+                    },
                 },
                 {
                     'name': 'name2',
                     'default': {},
-                    'space': {},
+                    'space': {
+                        'key1': ['value1', 'value2'],
+                    },
                 },
             ]
         }
