@@ -33,6 +33,10 @@
       "name": "query_boosts",
       "num_iterations": 50,
       "space": {
+        "match|url|boost": {
+          "low": 0,
+          "high": 10
+        },
         "match|title|boost": {
           "low": 0,
           "high": 10

@@ -91,7 +91,7 @@ def main():
         print(f" - selected method: {selected_method}")
         if selected_method != 'grid':
             print(f" - num iterations: {config_space.num_iterations}")
-        print(f" - base params: {base_params}")
+        print(f" - base params: {json.dumps(base_params)}")
 
         def params_with_values(param_values):
             return {k: v for k, v in zip(config_space.dimension_names(), param_values)}
@@ -110,7 +110,7 @@ def main():
             params = params_with_values(x0[-1])
             score = -1*y0[-1]
 
-            print(f"   - iteration {num_iters} evaluated: {params}")
+            print(f"   - iteration {num_iters} evaluated: {json.dumps(params)}")
             print(f"     - score: {score:.04f}")
 
         best_params = {}
@@ -122,7 +122,7 @@ def main():
                     score = search_and_evaluate(
                         es, args.index, metric, templates, args.template_id, queries, qrels,
                         param_train=[base_params, params])
-                    print(f"   - iteration {i+1} evaluated: {params}")
+                    print(f"   - iteration {i+1} evaluated: {json.dumps(params)}")
                     print(f"     - score: {score:.04f}")
                     if score > best_score:
                         best_score = score
@@ -151,7 +151,7 @@ def main():
         print()
 
     print("Final params:")
-    print(json.dumps(merge_param_train(param_train), indent=2))
+    print(merge_param_train(param_train))
 
 
 if __name__ == "__main__":

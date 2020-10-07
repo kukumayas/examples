@@ -1,10 +1,10 @@
 {
   "match|url|boost": 0,
-  "match|title|boost": 10,
-  "match|body|boost": 10,
+  "match|title|boost": 1,
+  "match|body|boost": 7,
   "multi_match|cross_fields|operator": "OR",
-  "multi_match|cross_fields|boost": 10,
+  "multi_match|cross_fields|boost": 7,
   "multi_match|phrase|operator": "AND",
   "multi_match|phrase|slop": 6,
-  "multi_match|phrase|boost": 1
+  "multi_match|phrase|boost": 4
 }
