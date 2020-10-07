@@ -11,17 +11,14 @@ class ConfigSpace:
     __METHODS = {'auto', 'grid', 'bayesian', None}
     __RANGE_FIELDS = {'low', 'high', 'distribution', 'base'}
 
-    def __init__(self, name, default, method, num_iterations, space):
-        assert name, "Name is required"
-        assert method in ConfigSpace.__METHODS, f"Unsupported method: {method}, must be one of {ConfigSpace.__METHODS}"
+    def __init__(self, space, method=DEFAULT_METHOD, num_iterations=DEFAULT_NUM_ITERATIONS, default={}):
         assert space, "Space is required"
-        assert not (method == 'grid' and num_iterations), f"Number of iterations is not supported for grid search"
+        assert method in ConfigSpace.__METHODS, f"Unsupported method: {method}, must be one of {ConfigSpace.__METHODS}"
 
-        self.name = name
-        self.default = default or {}
+        self.space = space
         self.method = method or ConfigSpace.DEFAULT_METHOD
         self.num_iterations = num_iterations or ConfigSpace.DEFAULT_NUM_ITERATIONS
-        self.space = space
+        self.default = default or {}
 
     def dimension_names(self):
         return [dim.name for dim in self.space]
@@ -99,30 +96,15 @@ class ConfigSpace:
     @staticmethod
     def parse(config):
         """Parse a space config from JSON into a concrete {{ConfigSpace}}."""
-        assert 'name' in config, "Name is required in a space configuration"
         assert 'space' in config, "Space is required in a space configuration"
+        assert not ('method' in config and 'num_iterations' in config and config['method' == 'grid']), \
+            f"Number of iterations is not supported for grid search"
 
         return ConfigSpace(
-            name=config['name'],
-            default=config.get('default'),
+            space=ConfigSpace.__parse_space(config['space']),
             method=config.get('method'),
             num_iterations=config.get('num_iterations'),
-            space=ConfigSpace.__parse_space(config['space']))
-
-
-class Config:
-    def __init__(self, default, spaces):
-        self.default = default
-        self.spaces = spaces
-
-    @staticmethod
-    def parse(config):
-        """Parse a config from JSON into a concrete {{Config}} with nested {{ConfigSpace}}s."""
-        assert isinstance(config['default'], dict), "Default params should be a dict of simple key-value pairs"
-        assert isinstance(config['spaces'], list), "Spaces should be a list of dimensions"
-        return Config(
-            default=config['default'],
-            spaces=[ConfigSpace.parse(space) for space in config['spaces']])
+            default=config.get('default'))
 
 
 def merge_param_train(param_train):

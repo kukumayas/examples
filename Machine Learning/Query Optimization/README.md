@@ -65,9 +65,9 @@ bin/split-and-sample \
     data/msmarco-document-sampled-queries.10000.tsv,10000
 ```
 
-### Run baseline query evaluation using baseline params
+### Run evaluation
 
-This uses the `dev` dataset, which contains about 3,200 queries.
+Using some baseline/default parameter values, run an evaluation. This uses the `dev` dataset, which contains about 3,200 queries.
 
 ```bash
 bin/eval \
@@ -81,7 +81,7 @@ bin/eval \
 
 ### Run query optimization
 
-This uses one of the sampled `train` datasets, which contains 1,000 queries.
+Build a configuration file based on the kind of optimization you want to do. This uses one of the sampled `train` datasets, which contains just 100 queries to experiment quickly with.
 
 ```bash
 bin/optimize-query \
@@ -92,3 +92,5 @@ bin/optimize-query \
   --qrels data/msmarco/document/msmarco-doctrain-qrels.tsv \
   --config config/optimize-query.json
 ```
+
+See the accompanying Jupyter notebooks for more details and a full example.
