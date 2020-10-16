@@ -1,3 +1,5 @@
+"""Evaluation support."""
+
 
 def build_requests(index, template_id, queries, qrels, params={}):
     """

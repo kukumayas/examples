@@ -19,7 +19,6 @@ from qopt.trec import load_queries_as_tuple, load_qrels
 from qopt.eval import build_requests
 
 DEFAULT_METRIC = os.path.join('config', 'metric-mrr.json')
-DEFAULT_PARAMS = os.path.join('config', 'params-defaults.json')
 DEFAULT_TEMPLATE_ID = 'template'
 DEFAULT_URL = 'http://elastic:changeme@localhost:9200'
 
@@ -53,8 +52,8 @@ def main():
     parser.add_argument('--queries', required=True,
                         help="The TREC Topic file with the queries that correspond to the 'qrels' file")
     parser.add_argument('--qrels', required=True, help="The TREC QRELs file corresponding to the 'queries' file")
-    parser.add_argument('--params', default=DEFAULT_PARAMS,
-                        help=f"A file containing the static search template parameters to use. Default: {DEFAULT_PARAMS}.")
+    parser.add_argument('--params', required=True,
+                        help=f"A file containing the static search template parameters to use.")
     args = parser.parse_args()
 
     es = Elasticsearch(args.url)

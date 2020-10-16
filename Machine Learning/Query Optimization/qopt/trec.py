@@ -32,3 +32,7 @@ def load_queries_as_tuple(filename):
         reader = csv.reader(f, delimiter='\t')
         for qId, query in reader:
             yield qId, query
+
+
+def load_queries_as_tuple_list(filename):
+    return list(load_queries_as_tuple(filename))

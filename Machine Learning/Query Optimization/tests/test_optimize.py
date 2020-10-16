@@ -1,27 +1,31 @@
 import unittest
 
-from qopt.optimize import ConfigSpace, merge_param_train
+from qopt.optimize import Config, merge_params
 from skopt.space import Categorical, Integer, Real
 
 
 class TestOptimize(unittest.TestCase):
 
-    def test_merge_param_train(self):
-        self.assertDictEqual(merge_param_train([{}]), {})
-        self.assertDictEqual(merge_param_train([
+    def test_merge_params(self):
+        with self.assertRaises(AssertionError):
+            merge_params([])
+
+        self.assertDictEqual(merge_params([
             {
                 'key1': 'value1',
                 'key2': 'value2',
             },
             {
                 'key1': 'value1.1',
-            }]), {
+            }
+        ]), {
                 'key1': 'value1.1',
                 'key2': 'value2',
-            })
+            }
+        )
 
 
-class TestConfigSpace(unittest.TestCase):
+class TestConfig(unittest.TestCase):
 
     def test_parse(self):
         space = {
@@ -48,7 +52,7 @@ class TestConfigSpace(unittest.TestCase):
                 'base': 2,
             },
         }
-        config = ConfigSpace.parse({
+        config = Config.parse({
             'default': {
                 'key': 'value1',
             },
@@ -70,27 +74,27 @@ class TestConfigSpace(unittest.TestCase):
         self.assertEqual(config.space[5], Real(low=1.0, high=10.0, prior='log-uniform', base=2, name='float_range_log2'))
 
     def test_select_method__provided(self):
-        cs = ConfigSpace([Categorical(['one', 'two'])], 'grid')
-        self.assertEqual(cs.select_method(), 'grid')
+        cs = Config([Categorical(['one', 'two'])], 'grid')
+        self.assertEqual(cs.selected_method, 'grid')
 
     def test_select_method__auto_mixed_dims(self):
-        cs = ConfigSpace([Categorical(['one', 'two']), Integer(0, 1)], 'auto', 10)
-        self.assertEqual(cs.select_method(), 'bayesian')
+        cs = Config([Categorical(['one', 'two']), Integer(0, 1)], 'auto', 10)
+        self.assertEqual(cs.selected_method, 'bayesian')
 
     def test_select_method__auto_low_dimensionality(self):
         # dimensionality = 2 < 10
-        cs = ConfigSpace([Categorical(['one', 'two'])], 'auto', 10)
-        self.assertEqual(cs.select_method(), 'grid')
+        cs = Config([Categorical(['one', 'two'])], 'auto', 10)
+        self.assertEqual(cs.selected_method, 'grid')
 
         # dimensionality = 4 < 10
-        cs = ConfigSpace([Categorical(['one', 'two']), Categorical(['three', 'four'])], 'auto', 10)
-        self.assertEqual(cs.select_method(), 'grid')
+        cs = Config([Categorical(['one', 'two']), Categorical(['three', 'four'])], 'auto', 10)
+        self.assertEqual(cs.selected_method, 'grid')
 
         # dimensionality = 6 == 6
-        cs = ConfigSpace([Categorical(['one', 'two']), Categorical(['three', 'four', 'five'])], 'auto', 6)
-        self.assertEqual(cs.select_method(), 'grid')
+        cs = Config([Categorical(['one', 'two']), Categorical(['three', 'four', 'five'])], 'auto', 6)
+        self.assertEqual(cs.selected_method, 'grid')
 
     def test_select_method__auto_high_dimensionality(self):
         # dimensionality = 6 > 5
-        cs = ConfigSpace([Categorical(['one', 'two']), Categorical(['three', 'four', 'five'])], 'auto', 5)
-        self.assertEqual(cs.select_method(), 'bayesian')
+        cs = Config([Categorical(['one', 'two']), Categorical(['three', 'four', 'five'])], 'auto', 5)
+        self.assertEqual(cs.selected_method, 'bayesian')

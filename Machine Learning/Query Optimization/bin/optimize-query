@@ -19,38 +19,17 @@ import sys
 import os
 
 from elasticsearch import Elasticsearch
-from sklearn.model_selection import ParameterGrid
-from skopt import gp_minimize
-from skopt.callbacks import DeltaXStopper
 
 # project library
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from qopt.eval import build_requests
-from qopt.optimize import ConfigSpace, merge_param_train
-from qopt.trec import load_qrels, load_queries_as_tuple
+from qopt.optimize import Config, optimize_query
+from qopt.trec import load_queries_as_tuple_list, load_qrels
 from qopt.util import Timer, load_json
 
 DEFAULT_METRIC = os.path.join('config', 'metric-mrr.json')
 DEFAULT_PARAMS = os.path.join('config', 'params-defaults.json')
 DEFAULT_TEMPLATE_ID = 'template'
 DEFAULT_URL = 'http://elastic:changeme@localhost:9200'
-
-
-def search_and_evaluate(es, index, metric, templates, template_id, queries, qrels, param_train):
-    """Run the rank evaluation API which will search all requests and evaluate based on the provided resources."""
-
-    # build the rank eval API request body from components
-    params = merge_param_train(param_train)
-    requests = build_requests(index, template_id, queries, qrels, params)
-    body = {
-        'metric': metric,
-        'templates': templates,
-        'requests': requests,
-    }
-
-    results = es.rank_eval(index=index, body=body, request_timeout=1200,
-                           allow_no_indices=False, ignore_unavailable=False)
-    return results['metric_score']
 
 
 def main():
@@ -73,73 +52,27 @@ def main():
     es = Elasticsearch(args.url)
     metric = load_json(args.metric)
     templates = load_json(args.templates)
-    queries = list(load_queries_as_tuple(args.queries))
+    queries = load_queries_as_tuple_list(args.queries)
     qrels = load_qrels(args.qrels)
-    config_space = ConfigSpace.parse(load_json(args.config))
-    selected_method = config_space.select_method()
+    config = Config.parse(load_json(args.config))
 
     print("Using configuration")
     print(f" - metric: {json.dumps(metric, indent=2)}")
-    print(f" - selected method: {selected_method}")
-    if selected_method != 'grid':
-        print(f" - num iterations: {config_space.num_iterations}")
-    print(f" - default params: {json.dumps(config_space.default)}")
+    print(f" - selected method: {config.selected_method}")
+    print(f" - default params: {json.dumps(config.default)}")
 
-    def params_with_values(param_values):
-        return {k: v for k, v in zip(config_space.dimension_names(), param_values)}
+    def logger(iteration, score, params):
+        print(f"   - iteration {iteration} scored {score:.04f} with: {json.dumps(params)}")
 
-    def objective_fn(param_values):
-        params = params_with_values(param_values)
-        return -1 * search_and_evaluate(
-            es, args.index, metric, templates, args.template_id, queries, qrels,
-            param_train=[config_space.default, params])
-
-    def logger(result):
-        x0 = result.x_iters  # list of input points
-        y0 = result.func_vals  # evaluation of input points
-
-        num_iters = len(x0)
-        params = params_with_values(x0[-1])
-        score = -1*y0[-1]
-
-        print(f"   - iteration {num_iters} evaluated: {json.dumps(params)}")
-        print(f"     - score: {score:.04f}")
-
-    best_params = {}
-    best_score = 0.0
     with Timer() as t:
-        if selected_method == 'grid':
-            grid_space = params_with_values([list(dim.categories) for dim in config_space.space])
-            for i, params in enumerate(list(ParameterGrid(grid_space))):
-                score = search_and_evaluate(
-                    es, args.index, metric, templates, args.template_id, queries, qrels,
-                    param_train=[config_space.default, params])
-                print(f"   - iteration {i+1} evaluated: {json.dumps(params)}")
-                print(f"     - score: {score:.04f}")
-                if score > best_score:
-                    best_score = score
-                    best_params = params.copy()
-
-        elif selected_method == 'bayesian':
-            res = gp_minimize(func=objective_fn, dimensions=config_space.space,
-                              n_calls=30,  # total calls to func, includes initial points
-                              n_initial_points=5,
-                              initial_point_generator='random',
-                              acq_func='PI',  # automatic at each iteration
-                              acq_optimizer='auto',  # selects the optimizer based on dimension types
-                              xi=0.01,  # improvement expected for acquisition method "EI" or "PI"
-                              kappa=4.0,  # exploration/exploitation for acquisition method "LCB", higher means more exploration
-                              verbose=False,
-                              callback=[DeltaXStopper(1e-8), logger])
-            best_params = params_with_values(res.x)
-            best_score = -1*res.fun
-        else:
-            raise ValueError(f"Unsupported method: {selected_method}")
+        best_score, best_params, final_params, _ = optimize_query(
+            es, args.index, config, metric, templates,
+            args.template_id, queries, qrels, logger)
 
     print(f" - duration: {t.interval_str()}")
     print(f" - best score: {best_score:.04f}")
     print(f" - best params: {best_params}")
-    print(f" - final params: {merge_param_train([config_space.default, best_params])}")
+    print(f" - final params: {final_params}")
     print()
 
 
