@@ -94,3 +94,27 @@ bin/optimize-query \
 ```
 
 See the accompanying Jupyter notebooks for more details and a full example.
+
+
+### Run TREC evalulation
+
+Download the official TREC evaluation tool. The current version as of publish date is `9.0.7`.
+
+```bash
+wget https://trec.nist.gov/trec_eval/trec_eval-9.0.7.tar.gz
+tar -xzvf trec_eval-9.0.7.tar.gz
+cd trec_eval-9.0.7
+make
+```
+
+Run the evaluation on the provided top 100 results from the `dev` set, and validate the output.
+
+```bash
+./trec_eval -c -mmap -M 100 \
+    ../data/msmarco/document/msmarco-docdev-qrels.tsv \
+    ../data/msmarco/document/msmarco-docdev-top100
+```
+
+```
+map                   	all	0.2219
+```

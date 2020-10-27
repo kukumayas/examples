@@ -22,7 +22,7 @@ def mrr(k):
     })
 
 
-def evaluate_mrr100_dev(es, template_id, params):
+def evaluate_mrr100_dev(es, max_concurrent_searches, template_id, params):
     templates = load_json(TEMPLATES_FILE)
     queries = load_queries_as_tuple_list(os.path.join(ROOT_DIR, 'data', 'msmarco', 'document', 'msmarco-docdev-queries.tsv'))
     qrels = load_qrels(os.path.join(ROOT_DIR, 'data', 'msmarco', 'document', 'msmarco-docdev-qrels.tsv'))
@@ -30,7 +30,7 @@ def evaluate_mrr100_dev(es, template_id, params):
         'metric': mrr(100),
         'templates': templates,
         'requests': build_requests(INDEX, template_id, queries, qrels, params),
-        'max_concurrent_searches': 30,
+        'max_concurrent_searches': max_concurrent_searches,
     }
 
     results = es.rank_eval(body=body, index=INDEX, request_timeout=1200,
@@ -43,7 +43,7 @@ def verbose_logger(iteration, score, params):
     print(f" - iteration {iteration} scored {score:.04f} with: {params}")
 
 
-def optimize_query_mrr100(es, template_id, config_space, verbose=True):
+def optimize_query_mrr100(es, max_concurrent_searches, template_id, config_space, verbose=True):
     templates = load_json(TEMPLATES_FILE)
     queries = load_queries_as_tuple_list(os.path.join(ROOT_DIR, 'data', 'msmarco-document-sampled-queries.1000.tsv'))
     qrels = load_qrels(os.path.join(ROOT_DIR, 'data', 'msmarco', 'document', 'msmarco-doctrain-qrels.tsv'))
@@ -54,7 +54,8 @@ def optimize_query_mrr100(es, template_id, config_space, verbose=True):
         logger = None
 
     best_score, best_params, final_params, metadata = optimize_query(
-        es, INDEX, config_space, mrr(100), templates, template_id, queries, qrels, logger)
+        es, max_concurrent_searches, INDEX, config_space, mrr(100), templates,
+        template_id, queries, qrels, logger)
 
     print(f"Best score: {best_score:.04f}")
     print(f"Best params: {best_params}")
@@ -64,9 +65,9 @@ def optimize_query_mrr100(es, template_id, config_space, verbose=True):
     return best_score, best_params, final_params, metadata
 
 
-def optimize_bm25_mrr100(es, template_id, default_params, verbose=True):
+def optimize_bm25_mrr100(es, max_concurrent_searches, template_id, query_params, verbose=True):
     templates = load_json(TEMPLATES_FILE)
-    queries = load_queries_as_tuple_list(os.path.join(ROOT_DIR, 'data', 'msmarco-document-sampled-queries.10000.tsv'))
+    queries = load_queries_as_tuple_list(os.path.join(ROOT_DIR, 'data', 'msmarco-document-sampled-queries.1000.tsv'))
     qrels = load_qrels(os.path.join(ROOT_DIR, 'data', 'msmarco', 'document', 'msmarco-doctrain-qrels.tsv'))
     if verbose:
         print("Optimizing parameters")
@@ -75,7 +76,8 @@ def optimize_bm25_mrr100(es, template_id, default_params, verbose=True):
         logger = None
 
     best_score, best_params, final_params, metadata = optimize_bm25(
-        es, INDEX, mrr(100), templates, template_id, queries, qrels, default_params, logger)
+        es, max_concurrent_searches, INDEX, mrr(100), templates, template_id,
+        queries, qrels, query_params, logger)
 
     print(f"Best score: {best_score:.04f}")
     print(f"Best params: {best_params}")

@@ -144,44 +144,45 @@ def merge_params(params):
     return merged
 
 
-def optimize_bm25(es, index, metric, templates, template_id,
-                  queries, qrels, default_params, logger_fn=None):
+def optimize_bm25(es, max_concurrent_searches, index, metric, templates,
+                  template_id, queries, qrels, query_params, logger_fn=None):
 
-    # initial points
-    # {'k1': 1.2, 'b': 0.75}  # Elasticsearch defaults
-    # {'k1': 0.9, 'b': 0.4}  # Anserini default
-    # {'k1': 0.82, 'b': 0.68}  # Anserini tuned for MSMARCO Passage Ranking
+    # initial points, assumes parameter order k1,b
+    initial_points = [
+        [1.2, 0.75],  # Elasticsearch defaults
+        [0.9, 0.4],  # Anserini defaults
+    ]
 
     config = Config(
-        # From: https://www.elastic.co/blog/practical-bm25-part-3-considerations-for-picking-b-and-k1-in-elasticsearch
-        space=[Real(0.5, 4.0, name='k1'),
+        # See: https://www.elastic.co/blog/practical-bm25-part-3-considerations-for-picking-b-and-k1-in-elasticsearch
+        space=[Real(0.5, 5.0, name='k1'),
                Real(0.3, 1.0, name='b')],
-        default=default_params,
+        default={},
         method='bayesian',
-        num_iterations=50,
+        num_iterations=30,
         num_initial_points=10)
 
     def objective_fn(trial_params):
         set_bm25_parameters(es, index, **trial_params)
         return -1 * search_and_evaluate(
-            es, index, metric, templates, template_id, queries, qrels,
-            params=merge_params([config.default, trial_params]))
+            es, max_concurrent_searches, index, metric, templates, template_id,
+            queries, qrels, params=query_params)
 
-    return optimize(config, objective_fn, logger_fn)
+    return optimize(config, objective_fn, initial_points, logger_fn)
 
 
-def optimize_query(es, index, config, metric, templates, template_id,
-                   queries, qrels, logger_fn=None):
+def optimize_query(es, max_concurrent_searches, index, config, metric,
+                   templates, template_id, queries, qrels, logger_fn=None):
 
     def objective_fn(trial_params):
         return -1 * search_and_evaluate(
-            es, index, metric, templates, template_id, queries, qrels,
-            params=merge_params([config.default, trial_params]))
+            es, max_concurrent_searches, index, metric, templates, template_id,
+            queries, qrels, params=merge_params([config.default, trial_params]))
 
-    return optimize(config, objective_fn, logger_fn)
+    return optimize(config, objective_fn, initial_points=None, logger_fn=logger_fn)
 
 
-def optimize(config, objective_fn, logger_fn=None):
+def optimize(config, objective_fn, initial_points=None, logger_fn=None):
     best_params = {}
     best_score = 0.0
     metadata = None
@@ -220,7 +221,8 @@ def optimize(config, objective_fn, logger_fn=None):
                           n_calls=config.num_iterations,  # total calls to func, includes initial points
                           n_initial_points=config.num_initial_points,  # random points to seed process
                           verbose=False,
-                          callback=[DeltaXStopper(0.001), skopt_logger])
+                          callback=[DeltaXStopper(0.001), skopt_logger],
+                          x0=initial_points)
         best_params = config.param_dict_from_values(res.x)
         best_score = -1 * res.fun
         metadata = res
@@ -231,7 +233,7 @@ def optimize(config, objective_fn, logger_fn=None):
     return best_score, best_params, final_params, metadata
 
 
-def search_and_evaluate(es, index, metric, templates, template_id, queries, qrels, params):
+def search_and_evaluate(es, max_concurrent_searches, index, metric, templates, template_id, queries, qrels, params):
     """Run the rank evaluation API which will search all requests and evaluate based on the provided resources."""
 
     # build the rank eval API request body from components
@@ -240,7 +242,7 @@ def search_and_evaluate(es, index, metric, templates, template_id, queries, qrel
         'metric': metric,
         'templates': templates,
         'requests': requests,
-        'max_concurrent_searches': 30,
+        'max_concurrent_searches': max_concurrent_searches,
     }
 
     assert metric, "metric was empty"

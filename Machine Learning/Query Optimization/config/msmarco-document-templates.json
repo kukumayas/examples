@@ -30,6 +30,7 @@
           "multi_match": {
             "type": "best_fields",
             "query": "{{query_string}}",
+            "tie_breaker": "{{tie_breaker}}",
             "fields": [
               "url^{{url|boost}}",
               "title^{{title|boost}}",
@@ -52,6 +53,9 @@
                 "multi_match": {
                   "type": "cross_fields",
                   "query": "{{query_string}}",
+                  "operator": "{{multi_match|cross_fields|operator}}",
+                  "minimum_should_match": "{{multi_match|cross_fields|minimum_should_match}}%",
+                  "tie_breaker": "{{multi_match|cross_fields|tie_breaker}}",
                   "fields": [
                     "url^{{multi_match|cross_fields|url|boost}}",
                     "title^{{multi_match|cross_fields|title|boost}}",
@@ -64,6 +68,7 @@
                 "multi_match": {
                   "type": "best_fields",
                   "query": "{{query_string}}",
+                  "tie_breaker": "{{multi_match|best_fields|tie_breaker}}",
                   "fields": [
                     "url^{{multi_match|best_fields|url|boost}}",
                     "title^{{multi_match|best_fields|title|boost}}",
