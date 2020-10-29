@@ -1,0 +1,14 @@
+{
+  "cross_fields|operator": "OR",
+  "cross_fields|minimum_should_match": 40,
+  "cross_fields|tie_breaker": 0.2956536905591155,
+  "cross_fields|url|boost": 1.03035723802844,
+  "cross_fields|title|boost": 10.0,
+  "cross_fields|body|boost": 6.270734180132099,
+  "cross_fields|boost": 1.0,
+  "best_fields|tie_breaker": 0.6924148954713882,
+  "best_fields|url|boost": 0.046945523897465875,
+  "best_fields|title|boost": 4.6032941355742240,
+  "best_fields|body|boost": 6.639497108731711,
+  "best_fields|boost": 1.0
+}

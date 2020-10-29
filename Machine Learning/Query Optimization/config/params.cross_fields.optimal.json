@@ -1,0 +1,8 @@
+{
+  "operator": "OR",
+  "minimum_should_match": 40,
+  "tie_breaker": 0.2956536905591155,
+  "url|boost": 1.03035723802844,
+  "title|boost": 10.0,
+  "body|boost": 6.270734180132099
+}

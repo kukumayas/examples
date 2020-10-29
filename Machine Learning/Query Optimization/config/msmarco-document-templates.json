@@ -53,69 +53,30 @@
                 "multi_match": {
                   "type": "cross_fields",
                   "query": "{{query_string}}",
-                  "operator": "{{multi_match|cross_fields|operator}}",
-                  "minimum_should_match": "{{multi_match|cross_fields|minimum_should_match}}%",
-                  "tie_breaker": "{{multi_match|cross_fields|tie_breaker}}",
+                  "operator": "{{cross_fields|operator}}",
+                  "minimum_should_match": "{{cross_fields|minimum_should_match}}%",
+                  "tie_breaker": "{{cross_fields|tie_breaker}}",
                   "fields": [
-                    "url^{{multi_match|cross_fields|url|boost}}",
-                    "title^{{multi_match|cross_fields|title|boost}}",
-                    "body^{{multi_match|cross_fields|body|boost}}"
+                    "url^{{cross_fields|url|boost}}",
+                    "title^{{cross_fields|title|boost}}",
+                    "body^{{cross_fields|body|boost}}"
                   ],
-                  "_name": "multi_match|cross_fields"
+                  "boost": "{{cross_fields|boost}}",
+                  "_name": "cross_fields"
                 }
               },
               {
                 "multi_match": {
                   "type": "best_fields",
                   "query": "{{query_string}}",
-                  "tie_breaker": "{{multi_match|best_fields|tie_breaker}}",
+                  "tie_breaker": "{{best_fields|tie_breaker}}",
                   "fields": [
-                    "url^{{multi_match|best_fields|url|boost}}",
-                    "title^{{multi_match|best_fields|title|boost}}",
-                    "body^{{multi_match|best_fields|body|boost}}"
+                    "url^{{best_fields|url|boost}}",
+                    "title^{{best_fields|title|boost}}",
+                    "body^{{best_fields|body|boost}}"
                   ],
-                  "_name": "multi_match|best_fields"
-                }
-              }
-            ]
-          }
-        }
-      }
-    }
-  },
-  {
-    "id": "basic",
-    "template": {
-      "lang": "mustache",
-      "source": {
-        "query": {
-          "bool": {
-            "should": [
-              {
-                "match": {
-                  "url": {
-                    "query": "{{query_string}}",
-                    "boost": "{{match|url|boost}}",
-                    "_name": "match|url"
-                  }
-                }
-              },
-              {
-                "match": {
-                  "title": {
-                    "query": "{{query_string}}",
-                    "boost": "{{match|title|boost}}",
-                    "_name": "match|title"
-                  }
-                }
-              },
-              {
-                "match": {
-                  "body": {
-                    "query": "{{query_string}}",
-                    "boost": "{{match|body|boost}}",
-                    "_name": "match|body"
-                  }
+                  "boost": "{{best_fields|boost}}",
+                  "_name": "best_fields"
                 }
               }
             ]

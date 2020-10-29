@@ -74,27 +74,41 @@ bin/eval \
   --index msmarco-document \
   --metric config/metric-mrr.json \
   --templates config/msmarco-document-templates.json \
+  --template-id cross_fields \
   --queries data/msmarco/document/msmarco-docdev-queries.tsv \
   --qrels data/msmarco/document/msmarco-docdev-qrels.tsv \
-  --params config/params.baseline.json
+  --params config/params.cross_fields.baseline.json
 ```
 
 ### Run query optimization
 
-Build a configuration file based on the kind of optimization you want to do. This uses one of the sampled `train` datasets, which contains just 100 queries to experiment quickly with.
+Build a configuration file based on the kind of optimization you want to do. This uses one of the sampled `train` datasets, which contains 10,000 queries.
 
 ```bash
 bin/optimize-query \
   --index msmarco-document \
   --metric config/metric-mrr.json \
   --templates config/msmarco-document-templates.json \
-  --queries data/msmarco-document-sampled-queries.100.tsv \
+  --template-id cross_fields \
+  --queries data/msmarco-document-sampled-queries.10000.tsv \
   --qrels data/msmarco/document/msmarco-doctrain-qrels.tsv \
-  --config config/optimize-query.json
+  --config config/optimize-query.cross_fields.json
 ```
 
-See the accompanying Jupyter notebooks for more details and a full example.
+Run the evaluation again to compare results on the same `dev` dataset, but this time use the optimal parameters.
 
+```bash
+bin/eval \
+  --index msmarco-document \
+  --metric config/metric-mrr.json \
+  --templates config/msmarco-document-templates.json \
+  --template-id cross_fields \
+  --queries data/msmarco/document/msmarco-docdev-queries.tsv \
+  --qrels data/msmarco/document/msmarco-docdev-qrels.tsv \
+  --params config/params.cross_fields.optimal.json
+```
+
+See the accompanying Jupyter notebooks for more details and examples.
 
 ### Run TREC evalulation
 
@@ -105,16 +119,39 @@ wget https://trec.nist.gov/trec_eval/trec_eval-9.0.7.tar.gz
 tar -xzvf trec_eval-9.0.7.tar.gz
 cd trec_eval-9.0.7
 make
+cd ..
 ```
 
 Run the evaluation on the provided top 100 results from the `dev` set, and validate the output.
 
 ```bash
-./trec_eval -c -mmap -M 100 \
-    ../data/msmarco/document/msmarco-docdev-qrels.tsv \
-    ../data/msmarco/document/msmarco-docdev-top100
+trec_eval-9.0.7/trec_eval -c -mmap -M 100 \
+    data/msmarco/document/msmarco-docdev-qrels.tsv \
+    data/msmarco/document/msmarco-docdev-top100
 ```
 
 ```
 map                   	all	0.2219
+```
+
+Run our query and generate a TREC compatible result file.
+
+```bash
+bin/bulk-search \
+  --index msmarco-document \
+  --name combined \
+  --templates config/msmarco-document-templates.json \
+  --template-id combined \
+  --queries data/msmarco/document/msmarco-docdev-queries.tsv \
+  --params config/params.combined.optimal.json \
+  --size 100 \
+  --output data/msmarco-docdev-combined-top100.tsv
+```
+
+And now evalute on the new results.
+
+```bash
+trec_eval-9.0.7/trec_eval -c -mmap -M 100 \
+    data/msmarco/document/msmarco-docdev-qrels.tsv \
+    data/msmarco-docdev-combined-top100.tsv
 ```
