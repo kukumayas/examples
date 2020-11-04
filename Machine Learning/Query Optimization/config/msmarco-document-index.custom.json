@@ -38,7 +38,7 @@
         }
       },
       "analyzer": {
-        "url_custom": {
+        "english_url_custom": {
           "tokenizer": "non_word_pattern_tokenizer",
           "filter": [
             "lowercase",

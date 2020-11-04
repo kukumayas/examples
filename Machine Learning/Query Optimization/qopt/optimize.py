@@ -159,7 +159,7 @@ def optimize_bm25(es, max_concurrent_searches, index, metric, templates,
                Real(0.3, 1.0, name='b')],
         default={},
         method='bayesian',
-        num_iterations=30,
+        num_iterations=50,
         num_initial_points=10)
 
     def objective_fn(trial_params):

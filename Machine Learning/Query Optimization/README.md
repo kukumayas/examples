@@ -39,7 +39,7 @@ We use [MSMARCO](http://www.msmarco.org) as a large-scale, public benchmark. Dow
 Convert corpus into indexable documents (~5 mins):
 
 ```bash
-bin/convert-msmarco-document-corpus \
+time bin/convert-msmarco-document-corpus \
   data/msmarco/document/msmarco-docs.tsv \
   data/msmarco-document-index-actions.jsonl
 ```
@@ -47,7 +47,7 @@ bin/convert-msmarco-document-corpus \
 Bulk index documents (~30 mins):
 
 ```bash
-bin/bulk-index \
+time bin/bulk-index \
   --index msmarco-document \
   --config config/msmarco-document-index.json \
   data/msmarco-document-index-actions.jsonl
@@ -70,7 +70,7 @@ bin/split-and-sample \
 Using some baseline/default parameter values, run an evaluation. This uses the `dev` dataset, which contains about 3,200 queries.
 
 ```bash
-bin/eval \
+time bin/eval \
   --index msmarco-document \
   --metric config/metric-mrr.json \
   --templates config/msmarco-document-templates.json \
@@ -85,7 +85,7 @@ bin/eval \
 Build a configuration file based on the kind of optimization you want to do. This uses one of the sampled `train` datasets, which contains 10,000 queries.
 
 ```bash
-bin/optimize-query \
+time bin/optimize-query \
   --index msmarco-document \
   --metric config/metric-mrr.json \
   --templates config/msmarco-document-templates.json \
@@ -98,7 +98,7 @@ bin/optimize-query \
 Run the evaluation again to compare results on the same `dev` dataset, but this time use the optimal parameters.
 
 ```bash
-bin/eval \
+time bin/eval \
   --index msmarco-document \
   --metric config/metric-mrr.json \
   --templates config/msmarco-document-templates.json \
@@ -137,7 +137,7 @@ map                   	all	0.2219
 Run our query and generate a TREC compatible result file.
 
 ```bash
-bin/bulk-search \
+time bin/bulk-search \
   --index msmarco-document \
   --name combined \
   --templates config/msmarco-document-templates.json \
