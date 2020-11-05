@@ -21,7 +21,7 @@
       }
     }
   },
-   {
+  {
     "id": "best_fields",
     "template": {
       "lang": "mustache",
@@ -35,6 +35,59 @@
               "url^{{url|boost}}",
               "title^{{title|boost}}",
               "body^{{body|boost}}"
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "multi_match_defaults",
+    "template": {
+      "lang": "mustache",
+      "source": {
+        "query": {
+          "multi_match": {
+            "query": "{{query_string}}",
+            "fields": [
+              "url",
+              "title",
+              "body"
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "combined_matches",
+    "template": {
+      "lang": "mustache",
+      "source": {
+        "query": {
+          "bool": {
+            "should": [
+              {
+                "match": {
+                  "url": {
+                    "query": "{{query_string}}"
+                  }
+                }
+              },
+              {
+                "match": {
+                  "title": {
+                    "query": "{{query_string}}"
+                  }
+                }
+              },
+              {
+                "match": {
+                  "body": {
+                    "query": "{{query_string}}"
+                  }
+                }
+              }
             ]
           }
         }
@@ -61,8 +114,7 @@
                     "title^{{cross_fields|title|boost}}",
                     "body^{{cross_fields|body|boost}}"
                   ],
-                  "boost": "{{cross_fields|boost}}",
-                  "_name": "cross_fields"
+                  "boost": "{{cross_fields|boost}}"
                 }
               },
               {
@@ -75,8 +127,7 @@
                     "title^{{best_fields|title|boost}}",
                     "body^{{best_fields|body|boost}}"
                   ],
-                  "boost": "{{best_fields|boost}}",
-                  "_name": "best_fields"
+                  "boost": "{{best_fields|boost}}"
                 }
               }
             ]

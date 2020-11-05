@@ -1,7 +1,7 @@
 {
   "settings": {
     "index": {
-      "number_of_shards": 4,
+      "number_of_shards": 1,
       "number_of_replicas": 0
     },
     "analysis": {
@@ -27,8 +27,7 @@
             "who", "what", "when", "where", "why", "how",
             "http", "https", "www",
             "gov", "edu",
-            "com", "net", "org", "info", "biz", "de", "ru", "icu", "uk", "xyz", "top", "cn", "nl",
-            "online", "site", "se", "fr", "it", "eu", "wang", "club",
+            "com", "net", "org", "info", "biz", "de", "ru", "icu", "uk", "xyz", "top", "cn", "nl", "online", "site", "se", "fr", "it", "eu", "wang", "club",
             "html", "htm", "xhtml", "js", "css", "cgi", "dll", "exe", "php", "asp", "aspx", "jsp", "do", "cfm"
           ]
         },

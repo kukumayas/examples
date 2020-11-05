@@ -9,7 +9,6 @@ from .trec import load_queries_as_tuple_list, load_qrels
 from .util import load_json
 
 ROOT_DIR = os.path.abspath('..')
-INDEX = 'msmarco-document'
 TEMPLATES_FILE = os.path.join(ROOT_DIR, 'config', 'msmarco-document-templates.json')
 
 
@@ -22,18 +21,18 @@ def mrr(k):
     })
 
 
-def evaluate_mrr100_dev(es, max_concurrent_searches, template_id, params):
+def evaluate_mrr100_dev(es, max_concurrent_searches, index, template_id, params):
     templates = load_json(TEMPLATES_FILE)
     queries = load_queries_as_tuple_list(os.path.join(ROOT_DIR, 'data', 'msmarco', 'document', 'msmarco-docdev-queries.tsv'))
     qrels = load_qrels(os.path.join(ROOT_DIR, 'data', 'msmarco', 'document', 'msmarco-docdev-qrels.tsv'))
     body = {
         'metric': mrr(100),
         'templates': templates,
-        'requests': build_requests(INDEX, template_id, queries, qrels, params),
+        'requests': build_requests(index, template_id, queries, qrels, params),
         'max_concurrent_searches': max_concurrent_searches,
     }
 
-    results = es.rank_eval(body=body, index=INDEX, request_timeout=1200,
+    results = es.rank_eval(body=body, index=index, request_timeout=1200,
                            allow_no_indices=False, ignore_unavailable=False)
     print(f"Score: {results['metric_score']:.04f}")
     return results
@@ -43,7 +42,7 @@ def verbose_logger(iteration, score, params):
     print(f" - iteration {iteration} scored {score:.04f} with: {params}")
 
 
-def optimize_query_mrr100(es, max_concurrent_searches, template_id, config_space, verbose=True):
+def optimize_query_mrr100(es, max_concurrent_searches, index, template_id, config_space, verbose=True):
     templates = load_json(TEMPLATES_FILE)
     queries = load_queries_as_tuple_list(os.path.join(ROOT_DIR, 'data', 'msmarco-document-sampled-queries.1000.tsv'))
     qrels = load_qrels(os.path.join(ROOT_DIR, 'data', 'msmarco', 'document', 'msmarco-doctrain-qrels.tsv'))
@@ -54,7 +53,7 @@ def optimize_query_mrr100(es, max_concurrent_searches, template_id, config_space
         logger = None
 
     best_score, best_params, final_params, metadata = optimize_query(
-        es, max_concurrent_searches, INDEX, config_space, mrr(100), templates,
+        es, max_concurrent_searches, index, config_space, mrr(100), templates,
         template_id, queries, qrels, logger)
 
     print(f"Best score: {best_score:.04f}")
@@ -65,7 +64,7 @@ def optimize_query_mrr100(es, max_concurrent_searches, template_id, config_space
     return best_score, best_params, final_params, metadata
 
 
-def optimize_bm25_mrr100(es, max_concurrent_searches, template_id, query_params, verbose=True):
+def optimize_bm25_mrr100(es, max_concurrent_searches, index, template_id, query_params, verbose=True):
     templates = load_json(TEMPLATES_FILE)
     queries = load_queries_as_tuple_list(os.path.join(ROOT_DIR, 'data', 'msmarco-document-sampled-queries.1000.tsv'))
     qrels = load_qrels(os.path.join(ROOT_DIR, 'data', 'msmarco', 'document', 'msmarco-doctrain-qrels.tsv'))
@@ -76,7 +75,7 @@ def optimize_bm25_mrr100(es, max_concurrent_searches, template_id, query_params,
         logger = None
 
     best_score, best_params, final_params, metadata = optimize_bm25(
-        es, max_concurrent_searches, INDEX, mrr(100), templates, template_id,
+        es, max_concurrent_searches, index, mrr(100), templates, template_id,
         queries, qrels, query_params, logger)
 
     print(f"Best score: {best_score:.04f}")
