@@ -25,7 +25,11 @@
           "stopwords": [
             "a", "an", "and", "are", "as", "at", "be", "but", "by", "for", "if", "in", "into", "is", "it", "no", "not", "of", "on", "or", "such", "that", "the", "their", "then", "there", "these", "they", "this", "to", "was", "will", "with",
             "who", "what", "when", "where", "why", "how",
-            "http", "https", "com", "org", "gov", "net"
+            "http", "https", "www",
+            "gov", "edu",
+            "com", "net", "org", "info", "biz", "de", "ru", "icu", "uk", "xyz", "top", "cn", "nl",
+            "online", "site", "se", "fr", "it", "eu", "wang", "club",
+            "html", "htm", "xhtml", "js", "css", "cgi", "dll", "exe", "php", "asp", "aspx", "jsp", "do", "cfm"
           ]
         },
         "english_stemmer": {
