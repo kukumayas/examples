@@ -66,7 +66,8 @@ def main():
 
     with Timer() as t:
         results = es.rank_eval(body=body, index=args.index, request_timeout=1200,
-                               allow_no_indices=False, ignore_unavailable=False)
+                               allow_no_indices=False, ignore_unavailable=False,
+                               dfs_query_then_fetch='dfs_query_then_fetch')
 
     print(f" - score: {results['metric_score']:.04f}")
     print(f" - duration: {t.interval_str()}")

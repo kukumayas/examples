@@ -36,7 +36,7 @@ ES_JAVA_OPTS="-Xmx8g -Xms8g" ./bin/elasticsearch
 
 We use [MSMARCO](http://www.msmarco.org) as a large-scale, public benchmark. Download the dataset and make it available in `data/msmarco-document`.
 
-Convert corpus into indexable documents (~5 mins):
+Convert the corpus into indexable documents (~5 mins):
 
 ```bash
 time bin/convert-msmarco-document-corpus \
@@ -44,12 +44,19 @@ time bin/convert-msmarco-document-corpus \
   data/msmarco-document-index-actions.jsonl
 ```
 
-Bulk index documents (~30 mins):
+Bulk index documents into two indices (with different analyzers) (~30 mins):
+
+```bash
+time bin/bulk-index \
+  --index msmarco-document.defaults \
+  --config config/msmarco-document-index.defaults.json \
+  data/msmarco-document-index-actions.jsonl
+```
 
 ```bash
 time bin/bulk-index \
   --index msmarco-document \
-  --config config/msmarco-document-index.json \
+  --config config/msmarco-document-index.custom.json \
   data/msmarco-document-index-actions.jsonl
 ```
 

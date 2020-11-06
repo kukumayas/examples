@@ -159,7 +159,7 @@ def optimize_bm25(es, max_concurrent_searches, index, metric, templates,
                Real(0.3, 1.0, name='b')],
         default={},
         method='bayesian',
-        num_iterations=50,
+        num_iterations=40,
         num_initial_points=10)
 
     def objective_fn(trial_params):
@@ -250,7 +250,8 @@ def search_and_evaluate(es, max_concurrent_searches, index, metric, templates, t
     assert requests, "requests was empty"
 
     results = es.rank_eval(index=index, body=body, request_timeout=1200,
-                           allow_no_indices=False, ignore_unavailable=False)
+                           allow_no_indices=False, ignore_unavailable=False,
+                           search_type='dfs_query_then_fetch')
     return results['metric_score']
 
 

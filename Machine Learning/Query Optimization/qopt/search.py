@@ -51,7 +51,7 @@ def temporary_search_template(es, template_file, template_id_in_file, size=None,
         es.delete_script(template_id)
 
 
-def _search_template(index, template_id, query):
+def search_template(local_es, index, template_id, query):
     def format_hit(hit):
         return {
             'id': hit['_id'],
@@ -64,7 +64,7 @@ def _search_template(index, template_id, query):
     }
 
     try:
-        res = es.search_template(index=index, body=body, allow_no_indices=False)
+        res = local_es.search_template(index=index, body=body, allow_no_indices=False)
     except RequestError as e:
         print(f"Error: id={query['id']}, query={query['params']['query_string']}")
         print(e)
@@ -72,6 +72,10 @@ def _search_template(index, template_id, query):
 
     hits = [format_hit(hit) for hit in res['hits']['hits']]
     return {'id': query['id'], 'hits': hits}
+
+
+def _search_template(index, template_id, query):
+    return search_template(es, index, template_id, query)
 
 
 def init_search_process(url):

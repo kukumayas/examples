@@ -33,7 +33,8 @@ def evaluate_mrr100_dev(es, max_concurrent_searches, index, template_id, params)
     }
 
     results = es.rank_eval(body=body, index=index, request_timeout=1200,
-                           allow_no_indices=False, ignore_unavailable=False)
+                           allow_no_indices=False, ignore_unavailable=False,
+                           search_type='dfs_query_then_fetch')
     print(f"Score: {results['metric_score']:.04f}")
     return results
 
