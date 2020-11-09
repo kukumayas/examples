@@ -1,32 +1,38 @@
 # Query Optimization
 
-Tune query parameters using search templates.
+In the following example code and notebooks we present a principled, data-driven approach to tuning queries based on a search relevance metric. We use the [Rank Evaluation API](https://www.elastic.co/guide/en/elasticsearch/reference/7.10/search-rank-eval.html) and [search templates](https://www.elastic.co/guide/en/elasticsearch/reference/7.10/search-template.html) to build a black-box optimization function and parameter space over which to optimize. This relies on the [skopt](https://scikit-optimize.github.io/) library for Bayesian optimization, which is one of the techniques used. All examples use the MS MARCO Document ranking datasets and metric, however all scripts and notebooks can easily be run with your own data and metric of choice (see the Rank Evaluation API for a description of [supported metrics](https://www.elastic.co/guide/en/elasticsearch/reference/7.10/search-rank-eval.html#_available_evaluation_metrics)).
 
-## Get started
+For a high-level overview of the motivation, prerequisite knowledge, etc. please see the accompanying blog post (pending publishing).
 
-Use the `Makefile` for all setup, building, testing, etc.
+## Setup
 
-```bash
-# install project dependencies (from requirements.txt)
-make init
+### Prerequisites
 
-# cleanup environment
-make clean
+To run the simulation, you will first need:
 
-# run tests
-make test
+ - Elasticsearch 7.10+ **
+   - Cloud [Elasticsearch Service](https://www.elastic.co/elasticsearch/service) (free trials available)
+   - [Local installations](https://www.elastic.co/start)
+ - `make`
+ - Python 3.7+ (try [pyenv](https://github.com/pyenv/pyenv) to manage multiple Python versions)
+ - `virtualenv` (installed with `pip install virtualenv`)
 
-# run Jupyter Lab (notebooks)
-make jupyter
-```
+** Instructions and code have been tested on versions: 7.9.3, 7.10.0. There is a slight performance improvement in 7.10 so we recommend using that version.
 
-## Demo
+### Project and environment
 
-All commands can be used with `--help` to explore the various optional arguments such as number of processes to use (for parallelizable tasks), URL for Elasticsearch, etc.
+Use the `Makefile` for all setup, building, testing, etc. Common commands (and targets) are:
 
-### Start Elasticsearch
+ - `make init`: install project dependencies (from requirements.txt)
+ - `make clean`: cleanup environment
+ - `make test`: run tests
+ - `make jupyter`: run Jupyter Lab (notebooks)
 
-Start an Elasticsearch instance locally or use a Cloud instance. For this demo, we recommend allocating at least 8GB of memory to the Elasticsearch JVM and having at least 16 GB total available on the host.
+Most operations are performed using scripts in the `bin` directory. Use `-h` or `--help` on the commands to explore their functionality and arguments such as number of processes to use (for parallelizable tasks), URL for Elasticsearch, etc.
+
+Start off by running just `make init` to setup the project.
+
+Start an Elasticsearch instance locally or use a [Cloud](https://cloud.elastic.co) instance. For this demo, we recommend allocating at least 8GB of memory to the Elasticsearch JVM and having at least 16 GB total available on the host.
 
 ```bash
 ES_JAVA_OPTS="-Xmx8g -Xms8g" ./bin/elasticsearch
@@ -71,6 +77,23 @@ bin/split-and-sample \
     data/msmarco-document-sampled-queries.1000.tsv,1000 \
     data/msmarco-document-sampled-queries.10000.tsv,10000
 ```
+
+At this point, you can choose to either carry on running things from the command line or you can jump to the notebooks and walk through a more detailed set of examples. We recommend the notebooks first, then come back and use the command line scripts when you have larger scale experimentation or evaluation that you'd like to perform.
+
+## Notebooks
+
+The notebooks are structued as teaching walkthroughs and contain a lot of detail on the process. We recommend going through the notebooks in the following order:
+
+- `0 - Analyzers`
+- `1 - Query tuning`
+- `2 - Query tuning - best_fields`
+- `Appendix A - BM25 tuning`
+
+To start the Jupyter Labs (notebooks) server, use `make jupyter`.
+
+## Command line scripts
+
+All of the code that powers the notebooks is also available through command line scripts. These scripts can be more convenient to run on a server in a `screen` session, for example, if your jobs take hours to run.
 
 ### Run evaluation
 
@@ -117,7 +140,7 @@ time bin/eval \
 
 See the accompanying Jupyter notebooks for more details and examples.
 
-### Run TREC evalulation
+### Run TREC evaluation
 
 Download the official TREC evaluation tool. The current version as of publish date is `9.0.7`.
 
