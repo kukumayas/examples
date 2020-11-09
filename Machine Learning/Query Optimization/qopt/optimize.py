@@ -126,6 +126,16 @@ class Config:
             default=config.get('default'))
 
 
+def _convert_param_types(params):
+    def _convert(x):
+        if isinstance(x, np.int64):
+            return int(x)
+        else:
+            return x
+
+    return {k: _convert(v) for k, v in params.items()}
+
+
 def merge_params(params):
     """
     Build a complete parameter set by merging all parameters in the provided
@@ -193,6 +203,7 @@ def optimize(config, objective_fn, initial_points=None, logger_fn=None):
 
         num_iters = len(x0)
         params = config.param_dict_from_values(x0[-1])
+        params = _convert_param_types(params)
         score = -1 * y0[-1]
 
         if logger_fn:
@@ -230,7 +241,7 @@ def optimize(config, objective_fn, initial_points=None, logger_fn=None):
         raise ValueError(f"Unsupported method: {config.selected_method}")
 
     final_params = merge_params([config.default, best_params])
-    return best_score, best_params, final_params, metadata
+    return best_score, _convert_param_types(best_params), _convert_param_types(final_params), metadata
 
 
 def search_and_evaluate(es, max_concurrent_searches, index, metric, templates, template_id, queries, qrels, params):

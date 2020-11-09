@@ -79,7 +79,7 @@ Using some baseline/default parameter values, run an evaluation. This uses the `
 ```bash
 time bin/eval \
   --index msmarco-document \
-  --metric config/metric-mrr.json \
+  --metric config/metric-mrr-100.json \
   --templates config/msmarco-document-templates.json \
   --template-id cross_fields \
   --queries data/msmarco/document/msmarco-docdev-queries.tsv \
@@ -89,12 +89,12 @@ time bin/eval \
 
 ### Run query optimization
 
-Build a configuration file based on the kind of optimization you want to do. This uses one of the sampled `train` datasets, which contains 10,000 queries.
+Build a configuration file based on the kind of optimization you want to do. This uses one of the sampled `train` datasets, which contains 10,000 queries. (Note that in the notebooks, we typically only use 1,000 queries for training.)
 
 ```bash
 time bin/optimize-query \
   --index msmarco-document \
-  --metric config/metric-mrr.json \
+  --metric config/metric-mrr-100.json \
   --templates config/msmarco-document-templates.json \
   --template-id cross_fields \
   --queries data/msmarco-document-sampled-queries.10000.tsv \
@@ -102,12 +102,12 @@ time bin/optimize-query \
   --config config/optimize-query.cross_fields.json
 ```
 
-Run the evaluation again to compare results on the same `dev` dataset, but this time use the optimal parameters.
+Save the output of the final parameters to a config file `config/params.cross_fields.optimal.json`. Run the evaluation again to compare results on the same `dev` dataset, but this time with the optimal parameters.
 
 ```bash
 time bin/eval \
   --index msmarco-document \
-  --metric config/metric-mrr.json \
+  --metric config/metric-mrr-100.json \
   --templates config/msmarco-document-templates.json \
   --template-id cross_fields \
   --queries data/msmarco/document/msmarco-docdev-queries.tsv \
@@ -141,18 +141,18 @@ trec_eval-9.0.7/trec_eval -c -mmap -M 100 \
 map                   	all	0.2219
 ```
 
-Run our query and generate a TREC compatible result file.
+Run our query and generate a TREC compatible result file. Make sure to choose the right template and a matching parameter configuration file.
 
 ```bash
 time bin/bulk-search \
   --index msmarco-document \
-  --name combined \
+  --name cross_fields \
   --templates config/msmarco-document-templates.json \
-  --template-id combined \
+  --template-id cross_fields \
   --queries data/msmarco/document/msmarco-docdev-queries.tsv \
-  --params config/params.combined.optimal.json \
+  --params config/params.cross_fields.optimal.json \
   --size 100 \
-  --output data/msmarco-docdev-combined-top100.tsv
+  --output data/msmarco-docdev-cross_fields-top100.tsv
 ```
 
 And now evalute on the new results.
@@ -160,5 +160,5 @@ And now evalute on the new results.
 ```bash
 trec_eval-9.0.7/trec_eval -c -mmap -M 100 \
     data/msmarco/document/msmarco-docdev-qrels.tsv \
-    data/msmarco-docdev-combined-top100.tsv
+    data/msmarco-docdev-cross_fields-top100.tsv
 ```

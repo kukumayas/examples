@@ -18,7 +18,8 @@ from qopt.util import Timer, load_json
 from qopt.trec import load_queries_as_tuple, load_qrels
 from qopt.eval import build_requests
 
-DEFAULT_METRIC = os.path.join('config', 'metric-mrr.json')
+DEFAULT_MAX_CONCURRENT_SEARCHES = 10
+DEFAULT_METRIC = os.path.join('config', 'metric-mrr-100.json')
 DEFAULT_TEMPLATE_ID = 'template'
 DEFAULT_URL = 'http://elastic:changeme@localhost:9200'
 
@@ -44,6 +45,8 @@ def main():
     parser.add_argument('--url', default=DEFAULT_URL,
                         help="An Elasticsearch connection URL, e.g. http://user:secret@localhost:9200")
     parser.add_argument('--index', required=True, help="The index name to use")
+    parser.add_argument('--max-concurrent-searches', type=int, default=DEFAULT_MAX_CONCURRENT_SEARCHES,
+                        help=f"The number of concurrent threads to use during search, this is a parameters of the Rank Evaluation API. Default: {DEFAULT_MAX_CONCURRENT_SEARCHES}.")
     parser.add_argument('--metric', default=DEFAULT_METRIC,
                         help=f"A JSON file containing the rank eval metric definition. Default: {DEFAULT_METRIC}.")
     parser.add_argument('--templates', required=True, help="A JSON file containing search templates to use")
@@ -67,7 +70,7 @@ def main():
     with Timer() as t:
         results = es.rank_eval(body=body, index=args.index, request_timeout=1200,
                                allow_no_indices=False, ignore_unavailable=False,
-                               dfs_query_then_fetch='dfs_query_then_fetch')
+                               search_type='dfs_query_then_fetch')
 
     print(f" - score: {results['metric_score']:.04f}")
     print(f" - duration: {t.interval_str()}")

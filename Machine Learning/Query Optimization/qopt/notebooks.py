@@ -22,15 +22,19 @@ def mrr(k):
 
 
 def evaluate_mrr100_dev(es, max_concurrent_searches, index, template_id, params):
+    k = 100
     templates = load_json(TEMPLATES_FILE)
     queries = load_queries_as_tuple_list(os.path.join(ROOT_DIR, 'data', 'msmarco', 'document', 'msmarco-docdev-queries.tsv'))
     qrels = load_qrels(os.path.join(ROOT_DIR, 'data', 'msmarco', 'document', 'msmarco-docdev-qrels.tsv'))
+
     body = {
-        'metric': mrr(100),
+        'metric': mrr(k),
         'templates': templates,
         'requests': build_requests(index, template_id, queries, qrels, params),
         'max_concurrent_searches': max_concurrent_searches,
     }
+
+    print(f"Evaluation with: MRR@{k}")
 
     results = es.rank_eval(body=body, index=index, request_timeout=1200,
                            allow_no_indices=False, ignore_unavailable=False,
@@ -44,11 +48,19 @@ def verbose_logger(iteration, score, params):
 
 
 def optimize_query_mrr100(es, max_concurrent_searches, index, template_id, config_space, verbose=True):
+    k = 100
+    queries_fname = os.path.join(ROOT_DIR, 'data', 'msmarco-document-sampled-queries.1000.tsv')
+    qrels_fname = os.path.join(ROOT_DIR, 'data', 'msmarco', 'document', 'msmarco-doctrain-qrels.tsv')
+
     templates = load_json(TEMPLATES_FILE)
-    queries = load_queries_as_tuple_list(os.path.join(ROOT_DIR, 'data', 'msmarco-document-sampled-queries.1000.tsv'))
-    qrels = load_qrels(os.path.join(ROOT_DIR, 'data', 'msmarco', 'document', 'msmarco-doctrain-qrels.tsv'))
+    queries = load_queries_as_tuple_list(queries_fname)
+    qrels = load_qrels(queries_fname)
+
     if verbose:
         print("Optimizing parameters")
+        print(" - metric: MRR@{k}")
+        print(f" - queries: {queries_fname}")
+        print(f" - queries: {qrels_fname}")
         logger = verbose_logger
     else:
         logger = None
@@ -66,11 +78,19 @@ def optimize_query_mrr100(es, max_concurrent_searches, index, template_id, confi
 
 
 def optimize_bm25_mrr100(es, max_concurrent_searches, index, template_id, query_params, verbose=True):
+    k = 100
+    queries_fname = os.path.join(ROOT_DIR, 'data', 'msmarco-document-sampled-queries.1000.tsv')
+    qrels_fname = os.path.join(ROOT_DIR, 'data', 'msmarco', 'document', 'msmarco-doctrain-qrels.tsv')
+
     templates = load_json(TEMPLATES_FILE)
-    queries = load_queries_as_tuple_list(os.path.join(ROOT_DIR, 'data', 'msmarco-document-sampled-queries.1000.tsv'))
-    qrels = load_qrels(os.path.join(ROOT_DIR, 'data', 'msmarco', 'document', 'msmarco-doctrain-qrels.tsv'))
+    queries = load_queries_as_tuple_list(queries_fname)
+    qrels = load_qrels(queries_fname)
+
     if verbose:
         print("Optimizing parameters")
+        print(" - metric: MRR@{k}")
+        print(f" - queries: {queries_fname}")
+        print(f" - queries: {qrels_fname}")
         logger = verbose_logger
     else:
         logger = None
