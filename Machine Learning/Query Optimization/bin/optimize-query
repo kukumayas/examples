@@ -7,10 +7,6 @@ Elasticsearch and a relevance metric as a non-convex function to optimize the
 parameter space over. We use either basic grid or random search techniques to
 explore the parameter space, or for larger parameter spaces we use more advanced
 techniques such as Bayesian optimization.
-
-This approach is dependent on Elasticsearch and specifically the rank evaluation
-API, and we use {{scikit-learn}} and {{scikit-optimize}} for finding the optimal
-parameters.
 """
 
 import argparse
@@ -50,6 +46,8 @@ def main():
     parser.add_argument('--qrels', required=True, help="The TREC QRELs file corresponding to the 'queries' file")
     parser.add_argument('--config', required=True,
                         help="A file containing the configuration for the parameters to optimize.")
+    parser.add_argument('--output', required=True,
+                        help="A file to store the optimal parameters in.")
     args = parser.parse_args()
 
     es = Elasticsearch(args.url)
@@ -71,6 +69,9 @@ def main():
         best_score, best_params, final_params, _ = optimize_query(
             es, args.max_concurrent_searches, args.index, config, metric, templates,
             args.template_id, queries, qrels, logger)
+
+    with open(args.output, 'w') as outfile:
+        json.dump(final_params, outfile, indent=2)
 
     print(f" - duration: {t.interval_str()}")
     print(f" - best score: {best_score:.04f}")

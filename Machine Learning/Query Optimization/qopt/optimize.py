@@ -17,7 +17,7 @@ class Config:
 
     __DEFAULT_BASE = 10
     __DEFAULT_DISTRIBUTION = 'uniform'
-    __METHODS = {'auto', 'grid', 'bayesian', None}
+    __METHODS = {'auto', 'grid', 'random', 'bayesian', None}
     __RANGE_FIELDS = {'low', 'high', 'distribution', 'base'}
 
     def __init__(self, space, method=DEFAULT_METHOD, num_iterations=DEFAULT_NUM_ITERATIONS,
@@ -117,6 +117,8 @@ class Config:
             f"Number of iterations is not supported for grid search"
         assert not ('method' in config and 'num_initial_points' in config and config['method'] == 'grid'), \
             f"Number of initial points is not supported for grid search"
+        assert not ('method' in config and 'num_initial_points' in config and config['method'] == 'random'), \
+            f"Number of initial points is not supported for random search"
 
         return Config(
             space=Config.__parse_space(config['space']),
@@ -154,7 +156,7 @@ def merge_params(params):
     return merged
 
 
-def optimize_bm25(es, max_concurrent_searches, index, metric, templates,
+def optimize_bm25(es, max_concurrent_searches, index, config, metric, templates,
                   template_id, queries, qrels, query_params, logger_fn=None):
 
     # initial points, assumes parameter order k1,b
@@ -162,15 +164,6 @@ def optimize_bm25(es, max_concurrent_searches, index, metric, templates,
         [1.2, 0.75],  # Elasticsearch defaults
         [0.9, 0.4],  # Anserini defaults
     ]
-
-    config = Config(
-        # See: https://www.elastic.co/blog/practical-bm25-part-3-considerations-for-picking-b-and-k1-in-elasticsearch
-        space=[Real(0.5, 5.0, name='k1'),
-               Real(0.3, 1.0, name='b')],
-        default={},
-        method='bayesian',
-        num_iterations=40,
-        num_initial_points=10)
 
     def objective_fn(trial_params):
         set_bm25_parameters(es, index, **trial_params)
@@ -223,7 +216,11 @@ def optimize(config, objective_fn, initial_points=None, logger_fn=None):
                 best_score = score
                 best_params = ordered_params.copy()
 
-    elif config.selected_method == 'bayesian':
+    elif config.selected_method == 'bayesian' or config.selected_method == 'random':
+
+        if config.selected_method == 'random':
+            config.num_initial_points = config.num_iterations
+
         def list_based_objective_fn(param_values):
             """Convert params to a dict first."""
             return objective_fn(config.param_dict_from_values(param_values))

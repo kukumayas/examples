@@ -49,18 +49,19 @@ def verbose_logger(iteration, score, params):
 
 def optimize_query_mrr100(es, max_concurrent_searches, index, template_id, config_space, verbose=True):
     k = 100
-    queries_fname = os.path.join(ROOT_DIR, 'data', 'msmarco-document-sampled-queries.1000.tsv')
-    qrels_fname = os.path.join(ROOT_DIR, 'data', 'msmarco', 'document', 'msmarco-doctrain-qrels.tsv')
+    queries_fname = os.path.join('data', 'msmarco-document-sampled-queries.1000.tsv')
+    qrels_fname = os.path.join('data', 'msmarco', 'document', 'msmarco-doctrain-qrels.tsv')
 
     templates = load_json(TEMPLATES_FILE)
-    queries = load_queries_as_tuple_list(queries_fname)
-    qrels = load_qrels(queries_fname)
+    queries = load_queries_as_tuple_list(os.path.join(ROOT_DIR, queries_fname))
+    qrels = load_qrels(os.path.join(ROOT_DIR, qrels_fname))
+
+    print("Optimizing parameters")
+    print(f" - metric: MRR@{k}")
+    print(f" - queries: {queries_fname}")
+    print(f" - queries: {qrels_fname}")
 
     if verbose:
-        print("Optimizing parameters")
-        print(" - metric: MRR@{k}")
-        print(f" - queries: {queries_fname}")
-        print(f" - queries: {qrels_fname}")
         logger = verbose_logger
     else:
         logger = None
@@ -77,27 +78,28 @@ def optimize_query_mrr100(es, max_concurrent_searches, index, template_id, confi
     return best_score, best_params, final_params, metadata
 
 
-def optimize_bm25_mrr100(es, max_concurrent_searches, index, template_id, query_params, verbose=True):
+def optimize_bm25_mrr100(es, max_concurrent_searches, index, template_id, query_params, config_space, verbose=True):
     k = 100
-    queries_fname = os.path.join(ROOT_DIR, 'data', 'msmarco-document-sampled-queries.1000.tsv')
-    qrels_fname = os.path.join(ROOT_DIR, 'data', 'msmarco', 'document', 'msmarco-doctrain-qrels.tsv')
+    queries_fname = os.path.join('data', 'msmarco-document-sampled-queries.1000.tsv')
+    qrels_fname = os.path.join('data', 'msmarco', 'document', 'msmarco-doctrain-qrels.tsv')
 
     templates = load_json(TEMPLATES_FILE)
-    queries = load_queries_as_tuple_list(queries_fname)
-    qrels = load_qrels(queries_fname)
+    queries = load_queries_as_tuple_list(os.path.join(ROOT_DIR, queries_fname))
+    qrels = load_qrels(os.path.join(ROOT_DIR, qrels_fname))
+
+    print("Optimizing parameters")
+    print(f" - metric: MRR@{k}")
+    print(f" - queries: {queries_fname}")
+    print(f" - queries: {qrels_fname}")
 
     if verbose:
-        print("Optimizing parameters")
-        print(" - metric: MRR@{k}")
-        print(f" - queries: {queries_fname}")
-        print(f" - queries: {qrels_fname}")
         logger = verbose_logger
     else:
         logger = None
 
     best_score, best_params, final_params, metadata = optimize_bm25(
-        es, max_concurrent_searches, index, mrr(100), templates, template_id,
-        queries, qrels, query_params, logger)
+        es, max_concurrent_searches, index, config_space, mrr(100), templates,
+        template_id, queries, qrels, query_params, logger)
 
     print(f"Best score: {best_score:.04f}")
     print(f"Best params: {best_params}")

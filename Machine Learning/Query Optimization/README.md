@@ -1,8 +1,31 @@
 # Query Optimization
 
-In the following example code and notebooks we present a principled, data-driven approach to tuning queries based on a search relevance metric. We use the [Rank Evaluation API](https://www.elastic.co/guide/en/elasticsearch/reference/7.10/search-rank-eval.html) and [search templates](https://www.elastic.co/guide/en/elasticsearch/reference/7.10/search-template.html) to build a black-box optimization function and parameter space over which to optimize. This relies on the [skopt](https://scikit-optimize.github.io/) library for Bayesian optimization, which is one of the techniques used. All examples use the MS MARCO Document ranking datasets and metric, however all scripts and notebooks can easily be run with your own data and metric of choice (see the Rank Evaluation API for a description of [supported metrics](https://www.elastic.co/guide/en/elasticsearch/reference/7.10/search-rank-eval.html#_available_evaluation_metrics)).
+In the following example code and notebooks we present a principled, data-driven approach to tuning queries based on a search relevance metric. We use the [Rank Evaluation API](https://www.elastic.co/guide/en/elasticsearch/reference/7.10/search-rank-eval.html) and [search templates](https://www.elastic.co/guide/en/elasticsearch/reference/7.10/search-template.html) to build a black-box optimization function and parameter space over which to optimize. This relies on the [skopt](https://scikit-optimize.github.io/) library for Bayesian optimization, which is one of the techniques used. All examples use the [MS MARCO](https://msmarco.org/) Document ranking datasets and metric, however all scripts and notebooks can easily be run with your own data and metric of choice. See the [Rank Evaluation API](https://www.elastic.co/guide/en/elasticsearch/reference/7.10/search-rank-eval.html) for a description of [supported metrics](https://www.elastic.co/guide/en/elasticsearch/reference/7.10/search-rank-eval.html#_available_evaluation_metrics).
 
-For a high-level overview of the motivation, prerequisite knowledge, etc. please see the accompanying blog post (pending publishing).
+In the context of the MS MARCO Document ranking task, we believe this provides a stronger baseline for comparison with neural ranking approaches. It can also be tuned for recall to provide a strong "retriever" component of a Q&A pipeline. What is often not talked about on leaderboards is also the latency of queries. You may achieve a higher relevance score (MRR@100) with neural ranking approaches but at what cost to real performance? This technique allows us to get the most relevance out of a query while maintaining high scalability and low latency search queries.   
+
+For a high-level overview of the motivation, prerequisite knowledge and summary, please see the accompanying blog post (pending publishing).
+
+## Results
+
+Based on a series of evaluations with various analyzers, query types, and optimization, we’ve achieved the following results on the MS MARCO Document "Full Ranking" task as measured by MRR@100 on the "development" dataset. All experiments with full details and explanations can be found in the referenced Jupyter notebook. The best scores from each notebook are highlighted.
+
+| Reference notebook | Experiment | MRR@100 |
+|---|---|---|
+| [0 - Analyzers](notebooks/0%20-%20Analyzers.ipynb) | Default analyzers, combined per-field `match`es | 0.2403 |
+| [0 - Analyzers](notebooks/0%20-%20Analyzers.ipynb) | Custom analyzers, combined per-field `match`es | 0.2505 |
+| [0 - Analyzers](notebooks/0%20-%20Analyzers.ipynb) | Default analyzers, `multi_match` `cross_fields` (default params) | 0.2477 |
+| [0 - Analyzers](notebooks/0%20-%20Analyzers.ipynb) | Default analyzers, `multi_match` `cross_fields` (default params) | 0.2680 |
+| [0 - Analyzers](notebooks/0%20-%20Analyzers.ipynb) | Default analyzers, `multi_match` `best_fields` (default params) | 0.2717 |
+| [0 - Analyzers](notebooks/0%20-%20Analyzers.ipynb) | Default analyzers, `multi_match` `best_fields` (default params) | **0.2873** |
+| [1 - Query tuning](notebooks/1%20-%20Query%20tuning.ipynb) | `multi_match` `cross_fields` baseline: default params | 0.2673 |
+| [1 - Query tuning](notebooks/1%20-%20Query%20tuning.ipynb) | `multi_match` `cross_fields` tuned (step-wise): `tie_breaker`, `minimum_should_match` | 0.2829 |
+| [1 - Query tuning](notebooks/1%20-%20Query%20tuning.ipynb) | `multi_match` `cross_fields` tuned (step-wise): all params | **0.3011** |
+| [1 - Query tuning](notebooks/1%20-%20Query%20tuning.ipynb) | `multi_match` `cross_fields` tuned (all-in-one v1): all params | 0.2945 |
+| [1 - Query tuning](notebooks/1%20-%20Query%20tuning.ipynb) | `multi_match` `cross_fields` tuned (all-in-one v2, refined parameter space): all params | 0.2990 |
+| [1 - Query tuning](notebooks/1%20-%20Query%20tuning.ipynb) | `multi_match` `cross_fields` tuned (all-in-one v3, random): all params | 0.2980 |
+| [2 - Query tuning - best_fields](notebooks/1%20-%20Query%20tuning%20best_fields.ipynb) | `multi_match` `best_fields` baseline: default params | 0.2873 |
+| [2 - Query tuning - best_fields](notebooks/1%20-%20Query%20tuning%20best_fields.ipynb) | `multi_match` `best_fields` tuned (all-in-one): all params | **0.3078** |
 
 ## Setup
 
@@ -17,7 +40,7 @@ To run the simulation, you will first need:
  - Python 3.7+ (try [pyenv](https://github.com/pyenv/pyenv) to manage multiple Python versions)
  - `virtualenv` (installed with `pip install virtualenv`)
 
-** Instructions and code have been tested on versions: 7.9.3, 7.10.0. There is a slight performance improvement in 7.10 so we recommend using that version.
+** Instructions and code have been tested on versions: 7.8.0, 7.9.3, 7.10.0. There is a slight relevance improvement in 7.9.3 over 7.8.x so we would recommend 7.9.3 at a minimum, but prefer always the latest release.
 
 ### Project and environment
 
@@ -40,7 +63,7 @@ ES_JAVA_OPTS="-Xmx8g -Xms8g" ./bin/elasticsearch
 
 ### Data
 
-We use [MSMARCO](http://www.msmarco.org) as a large-scale, public benchmark. Download the dataset and make it available in `data/msmarco-document`.
+We use [MSMARCO](https://msmarco.org) as a large-scale, public benchmark. Download the dataset and make it available in `data/msmarco-document`.
 
 Convert the corpus into indexable documents (~5 mins):
 
@@ -66,7 +89,7 @@ time bin/bulk-index \
   data/msmarco-document-index-actions.jsonl
 ```
 
-For experimentation and the final optimization process, sample the query training dataset into smaller datasets:
+For debugging, experimentation and the final optimization process, sample the query training dataset into smaller datasets:
 
 ```bash
 bin/split-and-sample \
@@ -112,7 +135,7 @@ time bin/eval \
 
 ### Run query optimization
 
-Build a configuration file based on the kind of optimization you want to do. This uses one of the sampled `train` datasets, which contains 10,000 queries. (Note that in the notebooks, we typically only use 1,000 queries for training.)
+Build a configuration file based on the kind of optimization you want to do. This uses one of the sampled `train` datasets, which contains 10,000 queries. (Note that in the notebooks, we typically only use 1,000 queries for training.) This will save the output of the final parameters to a JSON config file that can be used by evaluation.
 
 ```bash
 time bin/optimize-query \
@@ -122,10 +145,11 @@ time bin/optimize-query \
   --template-id cross_fields \
   --queries data/msmarco-document-sampled-queries.10000.tsv \
   --qrels data/msmarco/document/msmarco-doctrain-qrels.tsv \
-  --config config/optimize-query.cross_fields.json
+  --config config/optimize-query.cross_fields.json \ 
+  --output data/params.cross_fields.optimal.json
 ```
 
-Save the output of the final parameters to a config file `config/params.cross_fields.optimal.json`. Run the evaluation again to compare results on the same `dev` dataset, but this time with the optimal parameters.
+Run the evaluation again to compare results on the same `dev` dataset, but this time with the optimal parameters.
 
 ```bash
 time bin/eval \
@@ -135,7 +159,7 @@ time bin/eval \
   --template-id cross_fields \
   --queries data/msmarco/document/msmarco-docdev-queries.tsv \
   --qrels data/msmarco/document/msmarco-docdev-qrels.tsv \
-  --params config/params.cross_fields.optimal.json
+  --params data/params.cross_fields.optimal.json
 ```
 
 See the accompanying Jupyter notebooks for more details and examples.
