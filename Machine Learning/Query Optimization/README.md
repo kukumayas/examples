@@ -13,19 +13,19 @@ Based on a series of evaluations with various analyzers, query types, and optimi
 | Reference notebook | Experiment | MRR@100 |
 |---|---|---|
 | [0 - Analyzers](notebooks/0%20-%20Analyzers.ipynb) | Default analyzers, combined per-field `match`es | 0.2403 |
-| [0 - Analyzers](notebooks/0%20-%20Analyzers.ipynb) | Custom analyzers, combined per-field `match`es | 0.2505 |
-| [0 - Analyzers](notebooks/0%20-%20Analyzers.ipynb) | Default analyzers, `multi_match` `cross_fields` (default params) | 0.2477 |
-| [0 - Analyzers](notebooks/0%20-%20Analyzers.ipynb) | Default analyzers, `multi_match` `cross_fields` (default params) | 0.2680 |
-| [0 - Analyzers](notebooks/0%20-%20Analyzers.ipynb) | Default analyzers, `multi_match` `best_fields` (default params) | 0.2717 |
+| [0 - Analyzers](notebooks/0%20-%20Analyzers.ipynb) | Custom analyzers, combined per-field `match`es | 0.2504 |
+| [0 - Analyzers](notebooks/0%20-%20Analyzers.ipynb) | Default analyzers, `multi_match` `cross_fields` (default params) | 0.2475 |
+| [0 - Analyzers](notebooks/0%20-%20Analyzers.ipynb) | Default analyzers, `multi_match` `cross_fields` (default params) | 0.2683 |
+| [0 - Analyzers](notebooks/0%20-%20Analyzers.ipynb) | Default analyzers, `multi_match` `best_fields` (default params) | 0.2714 |
 | [0 - Analyzers](notebooks/0%20-%20Analyzers.ipynb) | Default analyzers, `multi_match` `best_fields` (default params) | **0.2873** |
-| [1 - Query tuning](notebooks/1%20-%20Query%20tuning.ipynb) | `multi_match` `cross_fields` baseline: default params | 0.2673 |
-| [1 - Query tuning](notebooks/1%20-%20Query%20tuning.ipynb) | `multi_match` `cross_fields` tuned (step-wise): `tie_breaker`, `minimum_should_match` | 0.2829 |
-| [1 - Query tuning](notebooks/1%20-%20Query%20tuning.ipynb) | `multi_match` `cross_fields` tuned (step-wise): all params | **0.3011** |
+| [1 - Query tuning](notebooks/1%20-%20Query%20tuning.ipynb) | `multi_match` `cross_fields` baseline: default params | 0.2683 |
+| [1 - Query tuning](notebooks/1%20-%20Query%20tuning.ipynb) | `multi_match` `cross_fields` tuned (step-wise): `tie_breaker`, `minimum_should_match` | 0.28419 |
+| [1 - Query tuning](notebooks/1%20-%20Query%20tuning.ipynb) | `multi_match` `cross_fields` tuned (step-wise): all params | **0.3007** |
 | [1 - Query tuning](notebooks/1%20-%20Query%20tuning.ipynb) | `multi_match` `cross_fields` tuned (all-in-one v1): all params | 0.2945 |
-| [1 - Query tuning](notebooks/1%20-%20Query%20tuning.ipynb) | `multi_match` `cross_fields` tuned (all-in-one v2, refined parameter space): all params | 0.2990 |
-| [1 - Query tuning](notebooks/1%20-%20Query%20tuning.ipynb) | `multi_match` `cross_fields` tuned (all-in-one v3, random): all params | 0.2980 |
-| [2 - Query tuning - best_fields](notebooks/1%20-%20Query%20tuning%20best_fields.ipynb) | `multi_match` `best_fields` baseline: default params | 0.2873 |
-| [2 - Query tuning - best_fields](notebooks/1%20-%20Query%20tuning%20best_fields.ipynb) | `multi_match` `best_fields` tuned (all-in-one): all params | **0.3078** |
+| [1 - Query tuning](notebooks/1%20-%20Query%20tuning.ipynb) | `multi_match` `cross_fields` tuned (all-in-one v2, refined parameter space): all params | 0.2993 |
+| [1 - Query tuning](notebooks/1%20-%20Query%20tuning.ipynb) | `multi_match` `cross_fields` tuned (all-in-one v3, random): all params | 0.2966 |
+| [2 - Query tuning - best_fields](notebooks/2%20-%20Query%20tuning%20-%20best_fields.ipynb) | `multi_match` `best_fields` baseline: default params | 0.2873 |
+| [2 - Query tuning - best_fields](notebooks/2%20-%20Query%20tuning%20-%20best_fields.ipynb) | `multi_match` `best_fields` tuned (all-in-one): all params | **0.3079** |
 
 ## Setup
 
@@ -107,10 +107,11 @@ At this point, you can choose to either carry on running things from the command
 
 The notebooks are structued as teaching walkthroughs and contain a lot of detail on the process. We recommend going through the notebooks in the following order:
 
-- `0 - Analyzers`
-- `1 - Query tuning`
-- `2 - Query tuning - best_fields`
-- `Appendix A - BM25 tuning`
+- [0 - Analyzers](notebooks/0%20-%20Analyzers.ipynb)
+- [1 - Query tuning](notebooks/1%20-%20Query%20tuning.ipynb)
+- [2 - Query tuning - best_fields](notebooks/2%20-%20Query%20tuning%20-%20best_fields.ipynb)
+- [Appendix A - BM25 tuning](notebooks/Appendix%20A%20-%20BM25%20tuning.ipynb)
+- [Appendix B - Combining queries](notebooks/Appendix%20B%20-%20Combining%20queries.ipynb)
 
 To start the Jupyter Labs (notebooks) server, use `make jupyter`.
 
@@ -127,10 +128,10 @@ time bin/eval \
   --index msmarco-document \
   --metric config/metric-mrr-100.json \
   --templates config/msmarco-document-templates.json \
-  --template-id cross_fields \
+  --template-id best_fields \
   --queries data/msmarco/document/msmarco-docdev-queries.tsv \
   --qrels data/msmarco/document/msmarco-docdev-qrels.tsv \
-  --params config/params.cross_fields.baseline.json
+  --params config/params.best_fields.baseline.json
 ```
 
 ### Run query optimization
@@ -142,11 +143,11 @@ time bin/optimize-query \
   --index msmarco-document \
   --metric config/metric-mrr-100.json \
   --templates config/msmarco-document-templates.json \
-  --template-id cross_fields \
+  --template-id best_fields \
   --queries data/msmarco-document-sampled-queries.10000.tsv \
   --qrels data/msmarco/document/msmarco-doctrain-qrels.tsv \
-  --config config/optimize-query.cross_fields.json \ 
-  --output data/params.cross_fields.optimal.json
+  --config config/optimize-query.best_fields.json \
+  --output data/params.best_fields.optimal.json
 ```
 
 Run the evaluation again to compare results on the same `dev` dataset, but this time with the optimal parameters.
@@ -156,10 +157,10 @@ time bin/eval \
   --index msmarco-document \
   --metric config/metric-mrr-100.json \
   --templates config/msmarco-document-templates.json \
-  --template-id cross_fields \
+  --template-id best_fields \
   --queries data/msmarco/document/msmarco-docdev-queries.tsv \
   --qrels data/msmarco/document/msmarco-docdev-qrels.tsv \
-  --params data/params.cross_fields.optimal.json
+  --params data/params.best_fields.optimal.json
 ```
 
 See the accompanying Jupyter notebooks for more details and examples.
@@ -193,13 +194,13 @@ Run our query and generate a TREC compatible result file. Make sure to choose th
 ```bash
 time bin/bulk-search \
   --index msmarco-document \
-  --name cross_fields \
+  --name best_fields \
   --templates config/msmarco-document-templates.json \
-  --template-id cross_fields \
+  --template-id best_fields \
   --queries data/msmarco/document/msmarco-docdev-queries.tsv \
-  --params config/params.cross_fields.optimal.json \
+  --params data/params.best_fields.optimal.json \
   --size 100 \
-  --output data/msmarco-docdev-cross_fields-top100.tsv
+  --output data/msmarco-docdev-best_fields-top100.tsv
 ```
 
 And now evalute on the new results.
@@ -207,5 +208,5 @@ And now evalute on the new results.
 ```bash
 trec_eval-9.0.7/trec_eval -c -mmap -M 100 \
     data/msmarco/document/msmarco-docdev-qrels.tsv \
-    data/msmarco-docdev-cross_fields-top100.tsv
+    data/msmarco-docdev-best_fields-top100.tsv
 ```
